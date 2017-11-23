@@ -1,2 +1,2 @@
 # rtl8188eus
-Linux Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips
+Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips and working under the new kernel for Linux
