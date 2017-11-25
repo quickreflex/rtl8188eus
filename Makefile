@@ -1381,6 +1381,7 @@ uninstall:
 	rm -f $(MODDESTDIR)/$(MODULE_NAME).ko
 	/sbin/depmod -a ${KVER}
 	@rm /etc/modprobe.d/50-8188eu.conf
+	@rm /etc/modprobe.d/8188eu.conf
 
 config_r:
 	@echo "make config"
