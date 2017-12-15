@@ -2199,7 +2199,7 @@ mpt_ProQueryCalTxPower_8188E(
 		CurrChannel = 1;
 	}	
 	
-	if( pMptCtx->MptRateIndex >= MPT_RATE_1M &&
+	if( pMptCtx->MptRateIndex > MPT_RATE_1M - 1 &&
 		pMptCtx->MptRateIndex <= MPT_RATE_11M )
 	{
 		TxPower = pHalData->Index24G_CCK_Base[rf_path][index];	
@@ -2244,7 +2244,7 @@ mpt_ProQueryCalTxPower_8188E(
 #endif
 
 	// 2012/11/02 Awk: add power limit mechansim
-	if( pMptCtx->MptRateIndex >= MPT_RATE_1M &&
+	if( pMptCtx->MptRateIndex > MPT_RATE_1M - 1 &&
 		pMptCtx->MptRateIndex <= MPT_RATE_11M )
 	{
 		rate = MGN_1M;

@@ -944,7 +944,7 @@ ssize_t proc_set_ht_enable(struct file *file, const char __user *buffer, size_t 
 
 		int num = sscanf(tmp, "%d ", &mode);
 
-		if( pregpriv && mode >= 0 && mode < 2 )
+		if( pregpriv && mode > -1 && mode < 2 )
 		{
 			pregpriv->ht_enable= mode;
 			printk("ht_enable=%d\n", pregpriv->ht_enable);
@@ -1067,7 +1067,7 @@ ssize_t proc_set_rx_ampdu(struct file *file, const char __user *buffer, size_t c
 
 		int num = sscanf(tmp, "%d ", &mode);
 
-		if( pregpriv && mode >= 0 && mode < 2 )
+		if( pregpriv && mode > -1 && mode < 2 )
 		{
 			pmlmeinfo->bAcceptAddbaReq = mode;
 			DBG_871X("pmlmeinfo->bAcceptAddbaReq=%d \n",pmlmeinfo->bAcceptAddbaReq);
@@ -1117,7 +1117,7 @@ ssize_t proc_set_en_fwps(struct file *file, const char __user *buffer, size_t co
 
 		int num = sscanf(tmp, "%d ", &mode);
 
-		if( pregpriv && mode >= 0 && mode < 2 )
+		if( pregpriv && mode > -1 && mode < 2 )
 		{
 			pregpriv->check_fw_ps = mode;
 			DBG_871X("pregpriv->check_fw_ps=%d \n",pregpriv->check_fw_ps);

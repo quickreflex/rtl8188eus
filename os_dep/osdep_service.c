@@ -79,7 +79,7 @@ u32 rtw_atoi(u8* s)
 
 inline u8* _rtw_vmalloc(u32 sz)
 {
-	u8 	*pbuf;
+	u8 	*pbuf = NULL;
 #ifdef PLATFORM_LINUX	
 	pbuf = vmalloc(sz);
 #endif	
@@ -105,7 +105,7 @@ inline u8* _rtw_vmalloc(u32 sz)
 
 inline u8* _rtw_zvmalloc(u32 sz)
 {
-	u8 	*pbuf;
+	u8 	*pbuf = NULL;
 #ifdef PLATFORM_LINUX
 	pbuf = _rtw_vmalloc(sz);
 	if (pbuf != NULL)

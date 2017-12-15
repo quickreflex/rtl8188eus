@@ -642,7 +642,7 @@ void rtw_build_beacon_wapi_ie(_adapter *padapter, unsigned char *pframe, struct 
 
 void rtw_build_assoc_req_wapi_ie(_adapter *padapter, unsigned char *pframe, struct pkt_attrib *pattrib)
 {
-	PRT_WAPI_BKID		pWapiBKID;
+	PRT_WAPI_BKID		pWapiBKID = NULL;
 	u16					bkidNum;
 	PRT_WAPI_T			pWapiInfo = &(padapter->wapiInfo);
 	u8					WapiIELength = 0;

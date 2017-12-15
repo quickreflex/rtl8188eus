@@ -25,6 +25,7 @@ EXTRA_CFLAGS += -Wno-unused-label
 EXTRA_CFLAGS += -Wno-unused-parameter
 EXTRA_CFLAGS += -Wno-unused-function
 EXTRA_CFLAGS += -Wno-unused
+EXTRA_CFLAGS += -Wno-type-limits
 
 #EXTRA_CFLAGS += -Wno-uninitialized
 
@@ -1373,7 +1374,7 @@ install:
 	@if [ ! -d $(MODDESTDIR) ]; then mkdir $(MODDESTDIR); fi;
 	install -p -m 644 $(MODULE_NAME).ko  $(MODDESTDIR)
 	@echo "blacklist r8188eu" > /etc/modprobe.d/50-8188eu.conf
-	@echo "options 8188eu rtw_power_mgnt=0 rtw_enusbss=0" > /etc/modprobe.d/8188eu.conf
+	@echo "options 8188eu rtw_power_mgnt=0 rtw_enusbss=0 rtw_ips_mode=1" > /etc/modprobe.d/8188eu.conf
 	/sbin/depmod -a ${KVER}
 
 uninstall:

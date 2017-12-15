@@ -651,14 +651,14 @@ static u8 cmp_pkt_chnl_diff(_adapter *padapter,u8* pframe,uint packet_len)
 	p = rtw_get_ie(pframe + WLAN_HDR_A3_LEN + _BEACON_IE_OFFSET_, _DSSET_IE_, &len, packet_len - _BEACON_IE_OFFSET_);	
 	if (p)	
 	{	
-		channel = *(p + 2);		
-		if(padapter->mlmeextpriv.cur_channel >= channel)		
+		channel = *(p + 2);
+		if(padapter->mlmeextpriv.cur_channel >= channel)
 		{			
-			return (padapter->mlmeextpriv.cur_channel - channel);		
+			return (padapter->mlmeextpriv.cur_channel - channel);
 		}		
 		else		
 		{			
-			return (channel-padapter->mlmeextpriv.cur_channel);		
+			return (channel-padapter->mlmeextpriv.cur_channel);
 		}	
 	}	
 	else
@@ -670,7 +670,7 @@ static u8 cmp_pkt_chnl_diff(_adapter *padapter,u8* pframe,uint packet_len)
 static void _mgt_dispatcher(_adapter *padapter, struct mlme_handler *ptable, union recv_frame *precv_frame)
 {
 	u8 bc_addr[ETH_ALEN] = {0xff,0xff,0xff,0xff,0xff,0xff};
-	u8 *pframe = precv_frame->u.hdr.rx_data; 
+	u8 *pframe = precv_frame->u.hdr.rx_data;
 
 	  if(ptable->func)
         {
@@ -777,24 +777,24 @@ void mgt_dispatcher(_adapter *padapter, union recv_frame *precv_frame)
 	switch (GetFrameSubType(pframe)) 
 	{
 		case WIFI_AUTH:
-			if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
+			if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
 				ptable->func = &OnAuth;
 			else
 				ptable->func = &OnAuthClient;
-			//pass through
+			//fall-through
 		case WIFI_ASSOCREQ:
 		case WIFI_REASSOCREQ:
-			_mgt_dispatcher(padapter, ptable, precv_frame);	
+			_mgt_dispatcher(padapter, ptable, precv_frame);
 #ifdef CONFIG_HOSTAPD_MLME				
-			if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
+			if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
 				rtw_hostapd_mlme_rx(padapter, precv_frame);
 #endif			
 			break;
 		case WIFI_PROBEREQ:
-			if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
+			if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
 			{
 #ifdef CONFIG_HOSTAPD_MLME		
-				rtw_hostapd_mlme_rx(padapter, precv_frame);		
+				rtw_hostapd_mlme_rx(padapter, precv_frame);
 #else
 				_mgt_dispatcher(padapter, ptable, precv_frame);
 #endif
@@ -807,17 +807,17 @@ void mgt_dispatcher(_adapter *padapter, union recv_frame *precv_frame)
 			break;
 		case WIFI_ACTION:
 			//if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
-			_mgt_dispatcher(padapter, ptable, precv_frame);		
+			_mgt_dispatcher(padapter, ptable, precv_frame);
 			break;
 		default:
-			_mgt_dispatcher(padapter, ptable, precv_frame);	
-			if(check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
-				rtw_hostapd_mlme_rx(padapter, precv_frame);			
+			_mgt_dispatcher(padapter, ptable, precv_frame);
+			if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
+				rtw_hostapd_mlme_rx(padapter, precv_frame);
 			break;
 	}
 #else
 
-	_mgt_dispatcher(padapter, ptable, precv_frame);	
+	_mgt_dispatcher(padapter, ptable, precv_frame);
 	
 #endif
 
@@ -937,7 +937,7 @@ unsigned int OnProbeReq(_adapter *padapter, union recv_frame *precv_frame)
 
 					p2p_listen_state_process( padapter,  get_sa(pframe));
 
-					return _SUCCESS;	
+					return _SUCCESS;
 				}
 
 				if(rtw_p2p_chk_role(pwdinfo, P2P_ROLE_GO))
@@ -1136,7 +1136,7 @@ _issue_probersp:
 			pmlmepriv->cur_network.join_res == _TRUE)) || check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE))
 		{
 			//DBG_871X("+issue_probersp during ap mode\n");
-			issue_probersp(padapter, get_sa(pframe), is_valid_p2p_probereq);		
+			issue_probersp(padapter, get_sa(pframe), is_valid_p2p_probereq);
 		}
 
 	}
@@ -1180,7 +1180,7 @@ unsigned int OnProbeRsp(_adapter *padapter, union recv_frame *precv_frame)
 												0,
 												pwdinfo->tx_prov_disc_info.peerDevAddr );
 				}
-			}		
+			}
 		}
 		return _SUCCESS;
 	}
@@ -1213,9 +1213,9 @@ unsigned int OnProbeRsp(_adapter *padapter, union recv_frame *precv_frame)
 
 	if (pmlmeext->sitesurvey_res.state == SCAN_PROCESS)
 	{
-		report_survey_event(padapter, precv_frame);	
+		report_survey_event(padapter, precv_frame);
 #ifdef CONFIG_CONCURRENT_MODE
-		report_survey_event(padapter->pbuddy_adapter, precv_frame);	
+		report_survey_event(padapter->pbuddy_adapter, precv_frame);
 #endif
 #ifdef CONFIG_DUALMAC_CONCURRENT
 		dc_report_survey_event(padapter, precv_frame);
@@ -1272,7 +1272,7 @@ unsigned int OnBeacon(_adapter *padapter, union recv_frame *precv_frame)
 	{
 		report_survey_event(padapter, precv_frame);
 #ifdef CONFIG_CONCURRENT_MODE
-		report_survey_event(padapter->pbuddy_adapter, precv_frame);	
+		report_survey_event(padapter->pbuddy_adapter, precv_frame);
 #endif
 
 #ifdef CONFIG_DUALMAC_CONCURRENT
@@ -1330,10 +1330,10 @@ unsigned int OnBeacon(_adapter *padapter, union recv_frame *precv_frame)
 				{            // join wrong channel, deauth and reconnect           
 					issue_deauth(padapter, (&(pmlmeinfo->network))->MacAddress, WLAN_REASON_DEAUTH_LEAVING);
 
-					report_del_sta_event(padapter,(&(pmlmeinfo->network))->MacAddress, WLAN_REASON_JOIN_WRONG_CHANNEL);    		
-					pmlmeinfo->state &= (~WIFI_FW_ASSOC_SUCCESS);    		
+					report_del_sta_event(padapter,(&(pmlmeinfo->network))->MacAddress, WLAN_REASON_JOIN_WRONG_CHANNEL);
+					pmlmeinfo->state &= (~WIFI_FW_ASSOC_SUCCESS);
 					return _SUCCESS;
-				}        
+				}
 				#endif //CONFIG_PATCH_JOIN_WRONG_CHANNEL
 
 				ret = rtw_check_bcn_info(padapter, pframe, len);
@@ -1350,10 +1350,10 @@ unsigned int OnBeacon(_adapter *padapter, union recv_frame *precv_frame)
 					update_beacon_info(padapter, pframe, len, psta);
 				}
 
-				adaptive_early_32k(pmlmeext, pframe, len);			 	
+				adaptive_early_32k(pmlmeext, pframe, len);
 				
 #ifdef CONFIG_DFS
-				process_csa_ie(padapter, pframe, len);	//channel switch announcement
+				process_csa_ie(padapter, pframe, len); //channel switch announcement
 #endif //CONFIG_DFS
 
 #ifdef CONFIG_P2P_PS
@@ -1397,7 +1397,7 @@ unsigned int OnBeacon(_adapter *padapter, union recv_frame *precv_frame)
 				}
 
 				//update TSF Value
-				update_TSF(pmlmeext, pframe, len);			
+				update_TSF(pmlmeext, pframe, len);
 
 				//report sta add event
 				report_add_sta_event(padapter, GetAddr2Ptr(pframe), cam_idx);
@@ -1425,7 +1425,7 @@ unsigned int OnAuth(_adapter *padapter, union recv_frame *precv_frame)
 	struct security_priv *psecuritypriv = &padapter->securitypriv;
 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
-	u8 *pframe = precv_frame->u.hdr.rx_data; 
+	u8 *pframe = precv_frame->u.hdr.rx_data;
 	uint len = precv_frame->u.hdr.len;
 	u8	offset = 0;
 
@@ -1680,7 +1680,7 @@ auth_fail:
 	_rtw_memcpy(pstat->hwaddr, sa, 6);	
 	
 #ifdef CONFIG_NATIVEAP_MLME
-	issue_auth(padapter, pstat, (unsigned short)status);	
+	issue_auth(padapter, pstat, (unsigned short)status);
 #endif
 
 #endif
@@ -1806,7 +1806,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
 	struct security_priv *psecuritypriv = &padapter->securitypriv;
 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
-	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);	
+	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	WLAN_BSSID_EX 	*cur = &(pmlmeinfo->network);
 	struct sta_priv *pstapriv = &padapter->stapriv;
 	u8 *pframe = precv_frame->u.hdr.rx_data;
@@ -1861,7 +1861,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 	}
 
 	capab_info = RTW_GET_LE16(pframe + WLAN_HDR_A3_LEN);
-	//capab_info = le16_to_cpu(*(unsigned short *)(pframe + WLAN_HDR_A3_LEN));	
+	//capab_info = le16_to_cpu(*(unsigned short *)(pframe + WLAN_HDR_A3_LEN));
 	//listen_interval = le16_to_cpu(*(unsigned short *)(pframe + WLAN_HDR_A3_LEN+2));
 	listen_interval = RTW_GET_LE16(pframe + WLAN_HDR_A3_LEN+2);
 
@@ -1882,7 +1882,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 		else
 		{
 			pstat->state &= (~WIFI_FW_ASSOC_SUCCESS);
-			pstat->state |= WIFI_FW_ASSOC_STATE;				
+			pstat->state |= WIFI_FW_ASSOC_STATE;
 		}
 	}
 	else
@@ -1920,7 +1920,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 	    !elems.ssid) {
 		DBG_871X("STA " MAC_FMT " sent invalid association request\n",
 		       MAC_ARG(pstat->hwaddr));
-		status = _STATS_FAILURE_;		
+		status = _STATS_FAILURE_;
 		goto OnAssocReqFail;
 	}
 
@@ -1931,7 +1931,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 		pkt_len - WLAN_HDR_A3_LEN - ie_offset);
 	if (p == NULL)
 	{
-		status = _STATS_FAILURE_;		
+		status = _STATS_FAILURE_;
 	}
 
 	if (ie_len == 0) // broadcast ssid, however it is not allowed in assocreq
@@ -1972,7 +1972,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 			{
 				_rtw_memcpy(supportRate+supportRateNum, p+2, ie_len);
 				supportRateNum += ie_len;
-			}			
+			}
 		}
 	}
 
@@ -2001,10 +2001,10 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 
 		if(rtw_parse_wpa2_ie(wpa_ie-2, wpa_ie_len+2, &group_cipher, &pairwise_cipher, NULL) == _SUCCESS)
 		{
-			pstat->dot8021xalg = 1;//psk,  todo:802.1x						
+			pstat->dot8021xalg = 1; //psk,  todo:802.1x
 			pstat->wpa_psk |= BIT(1);
 
-			pstat->wpa2_group_cipher = group_cipher&psecuritypriv->wpa2_group_cipher;				
+			pstat->wpa2_group_cipher = group_cipher&psecuritypriv->wpa2_group_cipher;
 			pstat->wpa2_pairwise_cipher = pairwise_cipher&psecuritypriv->wpa2_pairwise_cipher;
 			
 			if(!pstat->wpa2_group_cipher)
@@ -2027,10 +2027,10 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 
 		if(rtw_parse_wpa_ie(wpa_ie-2, wpa_ie_len+2, &group_cipher, &pairwise_cipher, NULL) == _SUCCESS)
 		{
-			pstat->dot8021xalg = 1;//psk,  todo:802.1x						
+			pstat->dot8021xalg = 1;//psk,  todo:802.1x
 			pstat->wpa_psk |= BIT(0);
 
-			pstat->wpa_group_cipher = group_cipher&psecuritypriv->wpa_group_cipher;				
+			pstat->wpa_group_cipher = group_cipher&psecuritypriv->wpa_group_cipher;
 			pstat->wpa_pairwise_cipher = pairwise_cipher&psecuritypriv->wpa_pairwise_cipher;
 			
 			if(!pstat->wpa_group_cipher)
@@ -2084,14 +2084,14 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 				rtw_get_wps_attr_content(pmlmepriv->wps_beacon_ie, pmlmepriv->wps_beacon_ie_len, WPS_ATTR_SELECTED_REGISTRAR , &selected_registrar, NULL);
 
 				if(!selected_registrar)
-				{						
+				{
 					DBG_871X("selected_registrar is _FALSE , or AP is not ready to do WPS\n");
 						
 					status = _STATS_UNABLE_HANDLE_STA_;
 			
 					goto OnAssocReqFail;
-				}						
-			}			
+				}
+			}
 		}
 			
 	}
@@ -2149,7 +2149,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 
 					pstat->flags |= WLAN_STA_WME;
 					
-					pstat->qos_option = 1;				
+					pstat->qos_option = 1;
 					pstat->qos_info = *(p+8);
 					
 					pstat->max_sp_len = (pstat->qos_info>>5)&0x3;
@@ -2176,7 +2176,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 						else
 							pstat->uapsd_bk = 0;
 			
-						if(pstat->qos_info&BIT(3))			
+						if(pstat->qos_info&BIT(3))
 							pstat->uapsd_be = BIT(0)|BIT(1);
 						else
 							pstat->uapsd_be = 0;
@@ -2203,7 +2203,7 @@ unsigned int OnAssocReq(_adapter *padapter, union recv_frame *precv_frame)
 		
 		pstat->flags |= WLAN_STA_WME;
 		
-		_rtw_memcpy(&pstat->htpriv.ht_cap, elems.ht_capabilities, sizeof(struct rtw_ieee80211_ht_cap));			
+		_rtw_memcpy(&pstat->htpriv.ht_cap, elems.ht_capabilities, sizeof(struct rtw_ieee80211_ht_cap));
 		
 	} else
 		pstat->flags &= ~WLAN_STA_HT;
@@ -2404,7 +2404,7 @@ asoc_class2_error:
 	issue_deauth(padapter, (void *)GetAddr2Ptr(pframe), status);
 #endif
 
-	return _FAIL;		
+	return _FAIL;
 
 OnAssocReqFail:
 
@@ -2420,7 +2420,7 @@ OnAssocReqFail:
 
 #endif /* CONFIG_AP_MODE */
 
-	return _FAIL;		
+	return _FAIL;
 
 }
 
@@ -2742,7 +2742,7 @@ unsigned int on_action_spct_ch_switch(_adapter *padapter, struct sta_info *psta,
 		int ch_switch_mode = -1, ch = -1, ch_switch_cnt = -1;
 		int ch_offset = -1;
 		u8 bwmode;
-		struct ieee80211_info_element *ie;
+		struct ieee80211_info_element *ie = NULL;
 
 		DBG_871X(FUNC_NDEV_FMT" from "MAC_FMT"\n",
 			FUNC_NDEV_ARG(padapter->pnetdev), MAC_ARG(psta->hwaddr));
@@ -2922,12 +2922,12 @@ unsigned int OnAction_back(_adapter *padapter, union recv_frame *precv_frame)
 				if (status == 0)
 				{	//successful					
 					DBG_871X("agg_enable for TID=%d\n", tid);
-					psta->htpriv.agg_enable_bitmap |= 1 << tid;					
-					psta->htpriv.candidate_tid_bitmap &= ~BIT(tid);				
+					psta->htpriv.agg_enable_bitmap |= 1 << tid;
+					psta->htpriv.candidate_tid_bitmap &= ~BIT(tid);
 				}
 				else
 				{					
-					psta->htpriv.agg_enable_bitmap &= ~BIT(tid);					
+					psta->htpriv.agg_enable_bitmap &= ~BIT(tid);
 				}
 
 				if(psta->state & WIFI_STA_ALIVE_CHK_STATE)
@@ -3443,7 +3443,7 @@ void issue_p2p_GO_request(_adapter *padapter, u8* raddr)
 	//	Channel Number
 	p2pie[ p2pielen++ ] = pwdinfo->operating_channel;	//	operating channel number
 
-	pframe = rtw_set_ie(pframe, _VENDOR_SPECIFIC_IE_, p2pielen, (unsigned char *) p2pie, &pattrib->pktlen );		
+	pframe = rtw_set_ie(pframe, _VENDOR_SPECIFIC_IE_, p2pielen, (unsigned char *) p2pie, &pattrib->pktlen );
 
 #ifdef CONFIG_WFD
 	wfdielen = build_nego_req_wfd_ie(pwdinfo, pframe);
@@ -3925,7 +3925,7 @@ void issue_p2p_GO_response(_adapter *padapter, u8* raddr, u8* frame_body,uint le
 		
 	}
 	
-	pframe = rtw_set_ie(pframe, _VENDOR_SPECIFIC_IE_, p2pielen, (unsigned char *) p2pie, &pattrib->pktlen );	
+	pframe = rtw_set_ie(pframe, _VENDOR_SPECIFIC_IE_, p2pielen, (unsigned char *) p2pie, &pattrib->pktlen );
 	
 #ifdef CONFIG_WFD
 	wfdielen = build_nego_resp_wfd_ie(pwdinfo, pframe);
@@ -8965,10 +8965,9 @@ void issue_action_BA(_adapter *padapter, unsigned char *raddr, unsigned char act
 					psta->BA_starting_seqctrl[status & 0x07] = start_seq;
 					
 					BA_starting_seqctrl = start_seq << 4;
+					BA_starting_seqctrl = cpu_to_le16(BA_starting_seqctrl);
+					pframe = rtw_set_fixed_ie(pframe, 2, (unsigned char *)(&(BA_starting_seqctrl)), &(pattrib->pktlen));
 				}
-				
-				BA_starting_seqctrl = cpu_to_le16(BA_starting_seqctrl);
-				pframe = rtw_set_fixed_ie(pframe, 2, (unsigned char *)(&(BA_starting_seqctrl)), &(pattrib->pktlen));
 				break;
 
 			case 1: //ADDBA rsp

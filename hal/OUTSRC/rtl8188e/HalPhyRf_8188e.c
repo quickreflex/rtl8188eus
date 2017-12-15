@@ -378,7 +378,7 @@ ODM_TxPwrTrackSetPwr88E(
 		}
 		else if (Final_OFDM_Swing_Index < 0)
 		{
-			pDM_Odm->Remnant_OFDMSwingIdx[RFPath] = Final_OFDM_Swing_Index ;     
+			pDM_Odm->Remnant_OFDMSwingIdx[RFPath] = Final_OFDM_Swing_Index;
 
 			setIqkMatrix_8188E(pDM_Odm, 0, ODM_RF_PATH_A, 
 			pDM_Odm->RFCalibrateInfo.IQKMatrixRegSetting[ChannelMappedIndex].Value[0][0],

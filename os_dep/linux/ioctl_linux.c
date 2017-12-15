@@ -6895,7 +6895,7 @@ static int rtw_dbg_port(struct net_device *dev,
 				case 0x01: //dbg mode
 					padapter->recvpriv.is_signal_dbg = 1;
 					extra_arg = extra_arg>100?100:extra_arg;
-					extra_arg = extra_arg<0?0:extra_arg;
+					extra_arg = extra_arg<=-1?0:extra_arg;
 					padapter->recvpriv.signal_strength_dbg=extra_arg;
 					break;
 			}
@@ -9123,6 +9123,8 @@ static int rtw_mp_efuse_get(struct net_device *dev,
 	padapter->registrypriv.fw_iol = 0;// 0:Disable, 1:enable, 2:by usb speed
 	#endif
 	
+	if (tmp[0] == NULL)
+		tmp[0] = "";
 	if(strcmp(tmp[0], "status") == 0){
 		sprintf(extra, "Load File efuse=%s,Load File MAC=%s",(pEEPROM->bloadfile_fail_flag? "FAIL" : "OK"),(pEEPROM->bloadmac_fail_flag? "FAIL" : "OK"));
 
@@ -9678,8 +9680,11 @@ exit:
 	if (rawdata)
 		rtw_mfree(rawdata, EFUSE_BT_MAX_MAP_LEN);
 	if (!err)
+	{
+		if (extra == NULL)
+			extra = "";
 		wrqu->length = strlen(extra);
-	
+	}
 	if (padapter->registrypriv.mp_mode == 0)
 	{
 	#ifdef CONFIG_IPS		
@@ -9779,6 +9784,8 @@ static int rtw_mp_efuse_set(struct net_device *dev,
 
 	// tmp[0],[1],[2]
 	// wmap,addr,00e04c871200
+	if (tmp[0] == NULL)
+		tmp[0] = "";
 	if (strcmp(tmp[0], "wmap") == 0)
 	{
 #if defined(CONFIG_RTL8188E) || defined(CONFIG_USB_HCI)
@@ -10418,7 +10425,8 @@ exit:
 		rtw_mfree(ShadowMapWiFi, EFUSE_MAP_SIZE);
 	if (setrawdata)
 		rtw_mfree(setrawdata, EFUSE_MAX_SIZE);
-	
+	if (extra == NULL)
+		extra = "";
 	wrqu->length = strlen(extra);
 
 	if (padapter->registrypriv.mp_mode == 0)
@@ -11337,6 +11345,8 @@ static int rtw_mp_arx(struct net_device *dev,
 			return -EFAULT;
 		}
 		else{
+			if (tmp[1] == NULL)
+				tmp[1] = "";
 			cnts = strlen(tmp[1])/2;
 			if (cnts<1) return -EFAULT;
 			DBG_871X("%s: cnts=%d\n", __FUNCTION__, cnts);
@@ -11363,6 +11373,8 @@ static int rtw_mp_arx(struct net_device *dev,
 			return -EFAULT;
 		}
 		else{
+			if (tmp[1] == NULL)
+				tmp[1] = "";
 			cnts = strlen(tmp[1])/2;
 			if (cnts<1) return -EFAULT;
 			DBG_871X("%s: cnts=%d\n", __FUNCTION__, cnts);
