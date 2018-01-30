@@ -148,7 +148,7 @@ ODM_TXPowerTrackingCallback_ThermalMeter(
 	//4 2. Initilization ( 7 steps in total )
 
 	ConfigureTxpowerTrack(pDM_Odm, &c);
-
+	
 	(*c.GetDeltaSwingTable)(pDM_Odm, (pu1Byte*)&deltaSwingTableIdx_TUP_A, (pu1Byte*)&deltaSwingTableIdx_TDOWN_A,
 									  (pu1Byte*)&deltaSwingTableIdx_TUP_B, (pu1Byte*)&deltaSwingTableIdx_TDOWN_B);	
 	

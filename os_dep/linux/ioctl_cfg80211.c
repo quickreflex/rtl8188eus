@@ -383,10 +383,9 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 	u16 notify_capability;
 	u16 notify_interval;
 	u8 *notify_ie;
-	size_t notify_ielen;
+	size_t notify_ielen = 0;
 	s32 notify_signal;
 	//u8 buf[MAX_BSSINFO_LEN];
-
 	u8 *pbuf;
 	size_t buf_size = MAX_BSSINFO_LEN;
 	size_t len,bssinf_len=0;
@@ -397,34 +396,52 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 	struct wireless_dev *wdev = padapter->rtw_wdev;
 	struct wiphy *wiphy = wdev->wiphy;
 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
-
+	
+	
 	pbuf = rtw_zmalloc(buf_size);
 	if(pbuf == NULL){
 		DBG_871X("%s pbuf allocate failed  !! \n",__FUNCTION__);
 		return bss;
 	}
+	
 
 	//DBG_8192C("%s\n", __func__);
-
-	bssinf_len = pnetwork->network.IELength+sizeof (struct rtw_ieee80211_hdr_3addr);
-	if(bssinf_len > buf_size){
-		DBG_871X("%s IE Length too long > %zu byte \n",__FUNCTION__,buf_size);
-		goto exit;
+	if (&pnetwork->network.IELength != NULL) {
+		bssinf_len = pnetwork->network.IELength+sizeof(struct rtw_ieee80211_hdr_3addr);
+		if(bssinf_len > buf_size){
+			DBG_871X("%s IE Length too long > %zu byte \n",__FUNCTION__,buf_size);
+			goto exit;
+		}
+	}
+	else {
+		bssinf_len = sizeof(struct rtw_ieee80211_hdr_3addr);
+		if(bssinf_len > buf_size){
+			DBG_871X("%s IE Length too long > %zu byte \n",__FUNCTION__,buf_size);
+			goto exit;
+		}
 	}
 
 #ifndef CONFIG_WAPI_SUPPORT
 	{
 		u16 wapi_len = 0;
-	
-		if(rtw_get_wapi_ie(pnetwork->network.IEs, pnetwork->network.IELength, NULL, &wapi_len)>0)
-		{
-			if(wapi_len > 0)
-			{
-				DBG_871X("%s, no support wapi!\n",__FUNCTION__);
-				goto exit;
-			}	
-		}		
-	}	
+		
+		if (&pnetwork->network.IELength != NULL) {
+			if(rtw_get_wapi_ie(pnetwork->network.IEs, pnetwork->network.IELength, NULL, &wapi_len) > 0) {
+				if(wapi_len > 0) {
+					DBG_871X("%s, no support wapi!\n",__FUNCTION__);
+					goto exit;
+				}
+			}
+		}
+		else {
+			if(rtw_get_wapi_ie(pnetwork->network.IEs, 0, NULL, &wapi_len) > 0) {
+				if(wapi_len > 0) {
+					DBG_871X("%s, no support wapi!\n",__FUNCTION__);
+					goto exit;
+				}
+			}
+		}
+	}
 #endif //!CONFIG_WAPI_SUPPORT
 
 	//To reduce PBC Overlap rate
@@ -438,7 +455,8 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 		u32 wpsielen=0;
 		u8 *wpsie=NULL;	
 		
-		wpsie = rtw_get_wps_ie(pnetwork->network.IEs+_FIXED_IE_LENGTH_, pnetwork->network.IELength-_FIXED_IE_LENGTH_, NULL, &wpsielen);
+		if (&pnetwork->network.IELength != NULL)
+			wpsie = rtw_get_wps_ie(pnetwork->network.IEs+_FIXED_IE_LENGTH_, pnetwork->network.IELength-_FIXED_IE_LENGTH_, NULL, &wpsielen);
 		
 		if(wpsie && wpsielen>0)
 			psr = rtw_get_wps_attr_content(wpsie,  wpsielen, WPS_ATTR_SELECTED_REGISTRAR, (u8*)(&sr), NULL);
@@ -501,8 +519,11 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 	}
 	//_exit_critical_bh(&pwdev_priv->scan_req_lock, &irqL);
 	
-
-	channel = pnetwork->network.Configuration.DSConfig;
+	if (&pnetwork->network.Configuration.DSConfig == NULL)
+		channel = 1;
+	else
+		channel = pnetwork->network.Configuration.DSConfig;
+		
 	if (channel <= RTW_CH_MAX_2G_CHANNEL)
 		freq = rtw_ieee80211_channel_to_frequency(channel, IEEE80211_BAND_2GHZ);
 	else
@@ -516,17 +537,21 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 		notify_timestamp = rtw_get_systime_us();
 
 	notify_interval = le16_to_cpu(*(u16*)rtw_get_beacon_interval_from_ie(pnetwork->network.IEs));
-	notify_capability = le16_to_cpu(*(u16*)rtw_get_capability_from_ie(pnetwork->network.IEs));		
+	notify_capability = le16_to_cpu(*(u16*)rtw_get_capability_from_ie(pnetwork->network.IEs));
 
 	notify_ie = pnetwork->network.IEs+_FIXED_IE_LENGTH_;
-	notify_ielen = pnetwork->network.IELength-_FIXED_IE_LENGTH_;
+	if (&pnetwork->network.IELength != NULL)
+		notify_ielen = pnetwork->network.IELength - _FIXED_IE_LENGTH_;
 
 	//We've set wiphy's signal_type as CFG80211_SIGNAL_TYPE_MBM: signal strength in mBm (100*dBm)
 	if ( check_fwstate(pmlmepriv, _FW_LINKED)== _TRUE &&
 		is_same_network(&pmlmepriv->cur_network.network, &pnetwork->network, 0)) {
 		notify_signal = 100*translate_percentage_to_dbm(padapter->recvpriv.signal_strength);//dbm
-	} else {
+	} else if(&pnetwork->network.PhyInfo.SignalStrength != NULL) {
 		notify_signal = 100*translate_percentage_to_dbm(pnetwork->network.PhyInfo.SignalStrength);//dbm
+	}
+	else {
+		notify_signal = 100*translate_percentage_to_dbm(0);//dbm
 	}
 		
 	#if 0
@@ -547,12 +572,14 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 	SetSeqNum(pwlanhdr, 0/*pmlmeext->mgnt_seq*/);
 	//pmlmeext->mgnt_seq++;
 
-	if (pnetwork->network.Reserved[0] == 1) { // WIFI_BEACON
-		_rtw_memcpy(pwlanhdr->addr1, bc_addr, ETH_ALEN);		
-		SetFrameSubType(pbuf, WIFI_BEACON);
-	} else {
-		_rtw_memcpy(pwlanhdr->addr1, myid(&(padapter->eeprompriv)), ETH_ALEN);
-		SetFrameSubType(pbuf, WIFI_PROBERSP);
+	if (&pnetwork->network.Reserved[0] != NULL) {
+		if (pnetwork->network.Reserved[0] == 1) { // WIFI_BEACON
+			_rtw_memcpy(pwlanhdr->addr1, bc_addr, ETH_ALEN);
+			SetFrameSubType(pbuf, WIFI_BEACON);
+		} else {
+			_rtw_memcpy(pwlanhdr->addr1, myid(&(padapter->eeprompriv)), ETH_ALEN);
+			SetFrameSubType(pbuf, WIFI_PROBERSP);
+		}
 	}
 
 	_rtw_memcpy(pwlanhdr->addr2, pnetwork->network.MacAddress, ETH_ALEN);
@@ -561,10 +588,14 @@ struct cfg80211_bss *rtw_cfg80211_inform_bss(_adapter *padapter, struct wlan_net
 
 	//pbuf += sizeof(struct rtw_ieee80211_hdr_3addr);
 	len = sizeof (struct rtw_ieee80211_hdr_3addr);
-	_rtw_memcpy((pbuf+len), pnetwork->network.IEs, pnetwork->network.IELength);
+	if (&pnetwork->network.IELength == NULL)
+		_rtw_memcpy((pbuf+len), pnetwork->network.IEs, 0);
+	else
+		_rtw_memcpy((pbuf+len), pnetwork->network.IEs, pnetwork->network.IELength);
 	*((u64*)(pbuf+len)) = cpu_to_le64(notify_timestamp);
 
-	len += pnetwork->network.IELength;
+	if (&pnetwork->network.IELength != NULL)
+		len += pnetwork->network.IELength;
 
 	//#ifdef CONFIG_P2P
 	//if(rtw_get_p2p_ie(pnetwork->network.IEs+12, pnetwork->network.IELength-12, NULL, NULL))
@@ -3692,8 +3723,10 @@ static int rtw_cfg80211_monitor_if_xmit_entry(struct sk_buff *skb, struct net_de
 	
 	DBG_871X(FUNC_NDEV_FMT"\n", FUNC_NDEV_ARG(ndev));
 
-	if (skb)
-		rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
+	if (!skb)
+			return -1;
+			
+	rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
 
 	if (unlikely(skb->len < sizeof(struct ieee80211_radiotap_header)))
 		goto fail;
@@ -3897,8 +3930,9 @@ static int rtw_cfg80211_add_monitor_if(_adapter *padapter, char *name, struct ne
 	strncpy(mon_ndev->name, name, IFNAMSIZ);
 	mon_ndev->name[IFNAMSIZ - 1] = 0;
 	
-	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 9))
-		mon_ndev->needs_free_netdev = false;
+	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12 ,0))
+		mon_ndev->needs_free_netdev = true;
+	#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 9))
 		mon_ndev->priv_destructor = rtw_ndev_destructor;
 	#else
 		mon_ndev->destructor = rtw_ndev_destructor;

@@ -450,23 +450,20 @@ void Hal_SetOFDMTxPower(PADAPTER pAdapter, u8 *TxPower)
 void Hal_SetAntennaPathPower(PADAPTER pAdapter)
 {
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(pAdapter);
-	u8 TxPowerLevel[MAX_RF_PATH_NUMS];
-	u8 rfPath;
+	u8 TxPowerLevel[2];
+	u8 rfPath = 0;
 
 	TxPowerLevel[RF_PATH_A] = pAdapter->mppriv.txpoweridx;
 	TxPowerLevel[RF_PATH_B] = pAdapter->mppriv.txpoweridx_b;
 
 	switch (pAdapter->mppriv.antenna_tx)
 	{
-		case ANTENNA_A:
-		default:
-			rfPath = RF_PATH_A;
-			break;
 		case ANTENNA_B:
 			rfPath = RF_PATH_B;
 			break;
-		case ANTENNA_C:
-			rfPath = RF_PATH_C;
+		case ANTENNA_A:
+		default:
+			rfPath = RF_PATH_A;
 			break;
 	}
 
@@ -480,7 +477,6 @@ void Hal_SetAntennaPathPower(PADAPTER pAdapter)
 				Hal_MPT_CCKTxPowerAdjustbyIndex(pAdapter, TxPowerLevel[rfPath]%2 == 0);
 			Hal_SetOFDMTxPower(pAdapter, TxPowerLevel);
 			break;
-
 		default:
 			break;
 	}

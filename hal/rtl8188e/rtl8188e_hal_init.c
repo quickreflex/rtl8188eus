@@ -4064,7 +4064,7 @@ static void hw_var_set_opmode(PADAPTER Adapter, u8 variable, u8* val)
 			rtw_write8(Adapter,REG_BCN_CTRL, 0x19);//disable atim wnd
 			//rtw_write8(Adapter,REG_BCN_CTRL, 0x18);
 		}
-		else if((mode == _HW_STATE_ADHOC_) /*|| (mode == _HW_STATE_AP_)*/)
+		else if(mode == _HW_STATE_ADHOC_) /*|| (mode == _HW_STATE_AP_)*/
 		{
 			ResumeTxBeacon(Adapter);
 			rtw_write8(Adapter,REG_BCN_CTRL, 0x1a);
@@ -4785,6 +4785,7 @@ struct qinfo_88e {
 	u32 macid:6;
 };
 
+
 struct bcn_qinfo_88e {
 	u16 head:8;
 	u16 pkt_num:8;
@@ -4835,7 +4836,7 @@ void dump_mac_qinfo_88e(void *sel, _adapter *adapter)
 	mg_q_info = rtw_read32(adapter, REG_MGQ_INFO);
 	hi_q_info = rtw_read32(adapter, REG_HGQ_INFO);
 	bcn_q_info = rtw_read16(adapter, REG_BCNQ_INFO);
-
+	
 	dump_qinfo_88e(sel, (struct qinfo_88e *)&q0_info, "Q0 ");
 	dump_qinfo_88e(sel, (struct qinfo_88e *)&q1_info, "Q1 ");
 	dump_qinfo_88e(sel, (struct qinfo_88e *)&q2_info, "Q2 ");

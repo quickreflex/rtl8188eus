@@ -10112,8 +10112,11 @@ void start_clnt_join(_adapter* padapter)
 				
 				scanned = LIST_CONTAINOR(pos, struct wlan_network, list);
 				if(scanned==NULL)
+				{
+					spin_unlock_bh(&(padapter->mlmepriv.scanned_queue.lock));
 					rtw_warn_on(1);
-
+					return;
+				}
 				if (_rtw_memcmp(&(scanned->network.Ssid), &(pnetwork->Ssid), sizeof(NDIS_802_11_SSID)) == _TRUE
 					&& _rtw_memcmp(scanned->network.MacAddress, pnetwork->MacAddress, sizeof(NDIS_802_11_MAC_ADDRESS)) == _TRUE
 				) {

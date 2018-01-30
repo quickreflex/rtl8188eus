@@ -756,7 +756,7 @@ _pkt *pskb
 		pbuf += pkt_offset;	
 		precvframe = NULL;
 	
-		if(transfer_len>0 && pkt_cnt==0)
+		if(transfer_len>0 && pkt_cnt==0 && prxstat)
 			pkt_cnt = (le32_to_cpu(prxstat->rxdw2)>>16) & 0xff;
 
 	}while((transfer_len>0) && (pkt_cnt>0));

@@ -353,16 +353,16 @@ _func_enter_;
 		//calculate icv and compare the icv
 		*((u32 *)crc)=le32_to_cpu(getcrc32(payload,length-4));
 		
-		if(crc[3]!=payload[length-1] || crc[2]!=payload[length-2] || crc[1]!=payload[length-3] || crc[0]!=payload[length-4])
+		if(&crc[3]!=&payload[length-1] || &crc[2]!=&payload[length-2] || &crc[1]!=&payload[length-3] || &crc[0]!=&payload[length-4])
 		{
 			RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("rtw_wep_decrypt:icv error crc[3](%x)!=payload[length-1](%x) || crc[2](%x)!=payload[length-2](%x) || crc[1](%x)!=payload[length-3](%x) || crc[0](%x)!=payload[length-4](%x)\n",
-						crc[3],payload[length-1],crc[2],payload[length-2],crc[1],payload[length-3],crc[0],payload[length-4]));
+				crc[3],payload[length-1],crc[2],payload[length-2],crc[1],payload[length-3],crc[0],payload[length-4]));
 		}
 
 		WEP_SW_DEC_CNT_INC(psecuritypriv, prxattrib->ra);
 	}
 	
-_func_exit_;		
+_func_exit_;
 
 	return;
 	
@@ -853,7 +853,7 @@ _func_exit_;
 
 //The hlen isn't include the IV
 u32 rtw_tkip_decrypt(_adapter *padapter, u8 *precvframe)
-{																	// exclude ICV
+{	// exclude ICV
 	u16 pnl;
 	u32 pnh;
 	u8   rc4key[16];
@@ -940,7 +940,7 @@ _func_enter_;
 			pnh=(u32)(dot11txpn.val>>16);
 
 			phase1((u16 *)&ttkey[0],prwskey,&prxattrib->ta[0],pnh);
-			phase2(&rc4key[0],prwskey,(unsigned short *)&ttkey[0],pnl);	
+			phase2(&rc4key[0],prwskey,(unsigned short *)&ttkey[0],pnl);
 
 			//4 decrypt payload include icv
 					
@@ -948,11 +948,12 @@ _func_enter_;
 			arcfour_encrypt(&mycontext, payload, payload, length);
 
 			*((u32 *)crc)=le32_to_cpu(getcrc32(payload,length-4));
-
-			if(crc[3]!=payload[length-1] || crc[2]!=payload[length-2] || crc[1]!=payload[length-3] || crc[0]!=payload[length-4])
+			
+			
+			if(&crc[3]!=&payload[length-1] || &crc[2]!=&payload[length-2] || &crc[1]!=&payload[length-3] || &crc[0]!=&payload[length-4])
 			{
-			    RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("rtw_wep_decrypt:icv error crc[3](%x)!=payload[length-1](%x) || crc[2](%x)!=payload[length-2](%x) || crc[1](%x)!=payload[length-3](%x) || crc[0](%x)!=payload[length-4](%x)\n",
-						crc[3],payload[length-1],crc[2],payload[length-2],crc[1],payload[length-3],crc[0],payload[length-4]));
+				RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("rtw_wep_decrypt:icv error crc[3](%x)!=payload[length-1](%x) || crc[2](%x)!=payload[length-2](%x) || crc[1](%x)!=payload[length-3](%x) || crc[0](%x)!=payload[length-4](%x)\n",
+					crc[3],payload[length-1],crc[2],payload[length-2],crc[1],payload[length-3],crc[0],payload[length-4]));
 				res=_FAIL;
 			}
 
@@ -962,12 +963,12 @@ _func_enter_;
 			RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("rtw_tkip_decrypt: stainfo==NULL!!!\n"));
 			res=_FAIL;
 		}
-						
+		
 	}
-_func_exit_;	
+_func_exit_;
 exit:
 	return res;
-				
+		
 }
 
 
@@ -1699,7 +1700,7 @@ _func_enter_;
 	pframe = ((struct xmit_frame*)pxmitframe)->buf_addr + hw_hdr_offset;
 
 	//4 start to encrypt each fragment
-	if((pattrib->encrypt==_AES_)){
+	if(pattrib->encrypt==_AES_){
 /*
 		if(pattrib->psta)
 		{
@@ -2075,8 +2076,7 @@ u32	rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 _func_enter_;	 
 	pframe=(unsigned char *)((union recv_frame*)precvframe)->u.hdr.rx_data;
 	//4 start to encrypt each fragment
-	if((prxattrib->encrypt==_AES_)){
-
+	if(prxattrib->encrypt==_AES_){
 		stainfo=rtw_get_stainfo(&padapter->stapriv ,&prxattrib->ta[0] );
 		if (stainfo!=NULL){
 			RT_TRACE(_module_rtl871x_security_c_,_drv_err_,("rtw_aes_decrypt: stainfo!=NULL!!!\n"));

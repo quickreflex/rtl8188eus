@@ -591,12 +591,12 @@ ssize_t proc_set_survey_info(struct file *file, const char __user *buffer, size_
 		return -EFAULT;
 
 #ifdef CONFIG_MP_INCLUDED
-		if ((padapter->registrypriv.mp_mode == 1)
+		if (padapter->registrypriv.mp_mode == 1
 #ifdef CONFIG_CONCURRENT_MODE
-		|| ((padapter->pbuddy_adapter) && (padapter->pbuddy_adapter->registrypriv.mp_mode == 1))
+		|| padapter->pbuddy_adapter && padapter->pbuddy_adapter->registrypriv.mp_mode == 1
 #endif			
 		){
-			DBG_871X(FUNC_ADPT_FMT ": MP mode block Scan request\n", FUNC_ADPT_ARG(padapter));	
+			DBG_871X(FUNC_ADPT_FMT ": MP mode block Scan request\n", FUNC_ADPT_ARG(padapter));
 			goto exit;
 		}
 #endif
@@ -624,9 +624,9 @@ ssize_t proc_set_survey_info(struct file *file, const char __user *buffer, size_
 		goto exit;
 	}
 	
-	if ((pmlmepriv->LinkDetectInfo.bBusyTraffic == _TRUE)
+	if (pmlmepriv->LinkDetectInfo.bBusyTraffic == _TRUE
 #ifdef CONFIG_CONCURRENT_MODE
-	|| (rtw_get_buddy_bBusyTraffic(padapter) == _TRUE)
+	|| rtw_get_buddy_bBusyTraffic(padapter) == _TRUE
 #endif
 	) {
 		DBG_871X("scan abort!! BusyTraffic == _TRUE\n");

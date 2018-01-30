@@ -366,7 +366,7 @@ void rtl8188e_set_FwMediaStatus_cmd(PADAPTER padapter, u16 mstatus_rpt )
 void ConstructBeacon(_adapter *padapter, u8 *pframe, u32 *pLength)
 {
 	struct rtw_ieee80211_hdr	*pwlanhdr;
-	u16					*fctrl;
+	__le16					*fctrl;
 	u32					rate_len, pktlen;
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
@@ -843,7 +843,7 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 	struct xmit_priv	*pxmitpriv;
 	struct mlme_ext_priv	*pmlmeext;
 	struct mlme_ext_info	*pmlmeinfo;
-	u32	BeaconLength, ProbeRspLength, PSPollLength;
+	u32	BeaconLength = 0, ProbeRspLength, PSPollLength;
 	u32	NullDataLength, QosNullLength, BTQosNullLength;
 	u8	*ReservedPagePacket;
 	u8	RsvdPageNum = 0;
@@ -873,6 +873,7 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 
 	if (ReservedPagePacket == NULL) {
 		DBG_871X("%s: alloc ReservedPagePacket fail!\n", __FUNCTION__);
+		return;
 	}
 
 	pHalData = GET_HAL_DATA(padapter);

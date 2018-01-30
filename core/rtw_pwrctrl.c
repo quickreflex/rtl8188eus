@@ -37,7 +37,7 @@ int rtw_fw_ps_state(PADAPTER padapter)
 	
 	_enter_pwrlock(&pwrpriv->check_32k_lock);
 	
-	if ((padapter->bSurpriseRemoved == _TRUE))
+	if (padapter->bSurpriseRemoved == _TRUE)
 	{
 		DBG_871X("%s: bSurpriseRemoved=%d , hw_init_completed=%d, bDriverStopped=%d \n", __FUNCTION__, padapter->bSurpriseRemoved,
 		padapter->hw_init_completed,padapter->bDriverStopped);
@@ -526,13 +526,13 @@ _func_enter_;
 	else
 #endif // CONFIG_LPS_RPWM_TIMER
 	{
-		if ( (pwrpriv->rpwm == pslv)
+		if (pwrpriv->rpwm == pslv
 #ifdef CONFIG_LPS_LCLK
 #ifndef CONFIG_RTL8723A
-			|| ((pwrpriv->rpwm >= PS_STATE_S2)&&(pslv >= PS_STATE_S2))
+			|| pwrpriv->rpwm >= PS_STATE_S2 && pslv >= PS_STATE_S2
 #endif
 #endif
-			)
+		)
 		{
 			RT_TRACE(_module_rtl871x_pwrctrl_c_,_drv_err_,
 				("%s: Already set rpwm[0x%02X], new=0x%02X!\n", __FUNCTION__, pwrpriv->rpwm, pslv));

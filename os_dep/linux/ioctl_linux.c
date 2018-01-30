@@ -5350,7 +5350,7 @@ static int rtw_p2p_get_invitation_procedure(struct net_device *dev,
 		sprintf(inv_proc_str, "\nIP=-1");
 	} else
 	{
-		if (attr_content[0] && 0x20)
+		if (attr_content[0] & 0x20)
 		{
 			sprintf(inv_proc_str, "\nIP=1");
 		} else
@@ -5371,7 +5371,7 @@ static int rtw_p2p_connect(struct net_device *dev,
                                union iwreq_data *wrqu, char *extra)
 {
 	
-	int ret = 0;	
+	int ret = 0;
 	_adapter 				*padapter = (_adapter *)rtw_netdev_priv(dev);	
 	struct wifidirect_info	*pwdinfo = &( padapter->wdinfo );
 	u8					peerMAC[ ETH_ALEN ] = { 0x00 };
@@ -12213,7 +12213,7 @@ static int rtw_mp_set(struct net_device *dev,
 		return -ENETDOWN;
 	}
 
-	if((padapter->bup == _FALSE ))
+	if(padapter->bup == _FALSE)
 	{
 		DBG_871X(" %s fail =>(padapter->bup == _FALSE )\n",__FUNCTION__);
 		return -ENETDOWN;
@@ -12294,7 +12294,7 @@ static int rtw_mp_get(struct net_device *dev,
 	{
 		return -ENETDOWN;
 	}
-	if((padapter->bup == _FALSE ))
+	if(padapter->bup == _FALSE)
 	{
 		DBG_871X(" %s fail =>(padapter->bup == _FALSE )\n",__FUNCTION__);
 		return -ENETDOWN;
