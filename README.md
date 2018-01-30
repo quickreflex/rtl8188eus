@@ -1,5 +1,5 @@
 # rtl8188eus
-Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips and working under the new linux kernel (4.14.x).
+Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips and working under the new linux kernel (4.15.x).
 More information about your wifi device can be found here: https://wikidevi.com.
 
 Compiling & Building
