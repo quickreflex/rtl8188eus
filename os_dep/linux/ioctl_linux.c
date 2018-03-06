@@ -6749,13 +6749,7 @@ static int rtw_rereg_nd_name(struct net_device *dev,
 
 	if(rereg_priv->old_ifname[0] == 0) {
 		char *reg_ifname;
-#ifdef CONFIG_CONCURRENT_MODE 
-		if (padapter->isprimary)
-			reg_ifname = padapter->registrypriv.ifname;
-		else
-#endif
-		reg_ifname = padapter->registrypriv.if2name;
-
+		reg_ifname = padapter->registrypriv.ifname;
 		strncpy(rereg_priv->old_ifname, reg_ifname, IFNAMSIZ);
 		rereg_priv->old_ifname[IFNAMSIZ-1] = 0;
 	}

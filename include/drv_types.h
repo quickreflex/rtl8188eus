@@ -289,7 +289,6 @@ struct registry_priv
 #endif
 
 	u8 ifname[16];
-	u8 if2name[16];
 
 	u8 notch_filter;
 

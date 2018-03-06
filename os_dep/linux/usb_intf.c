@@ -1828,10 +1828,6 @@ _func_enter_;
 	}*/
 
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_ANDROID_POWER)
-	rtw_unregister_early_suspend(pwrctl);
-#endif
-
 	rtw_pm_set_ips(padapter, IPS_NONE);
 	rtw_pm_set_lps(padapter, PS_MODE_ACTIVE);
 

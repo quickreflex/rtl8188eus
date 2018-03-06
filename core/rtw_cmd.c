@@ -3005,7 +3005,7 @@ _func_exit_;
 u8 rtw_ps_cmd(_adapter*padapter)
 {
 	struct cmd_obj		*ppscmd;
-	struct drvextra_cmd_parm	*pdrvextra_cmd_parm;	
+	struct drvextra_cmd_parm	*pdrvextra_cmd_parm;
 	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
 	
 	u8	res = _SUCCESS;
