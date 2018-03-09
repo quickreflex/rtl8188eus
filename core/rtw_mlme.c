@@ -1920,14 +1920,11 @@ static void rtw_joinbss_update_network(_adapter *padapter, struct wlan_network *
 			, padapter->recvpriv.signal_qual
 	);
 	#endif
-#ifdef CONFIG_NEW_SIGNAL_STAT_PROCESS
-	rtw_set_signal_stat_timer(&padapter->recvpriv);
-#endif
-				
+	
 	//update fw_state //will clr _FW_UNDER_LINKING here indirectly
 	switch(pnetwork->network.InfrastructureMode)
 	{	
-		case Ndis802_11Infrastructure:						
+		case Ndis802_11Infrastructure:
 			
 				if(pmlmepriv->fw_state&WIFI_UNDER_WPS)
 					pmlmepriv->fw_state = WIFI_STATION_STATE|WIFI_UNDER_WPS;

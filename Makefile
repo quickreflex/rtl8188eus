@@ -13,8 +13,8 @@ endif
 EXTRA_CFLAGS += $(USER_EXTRA_CFLAGS)
 #EXTRA_CFLAGS += -O1
 EXTRA_CFLAGS += -O2
-EXTRA_CFLAGS += -Wall
-EXTRA_CFLAGS += -Wextra
+#EXTRA_CFLAGS += -Wall
+#EXTRA_CFLAGS += -Wextra
 #EXTRA_CFLAGS += -Werror
 #EXTRA_CFLAGS += -pedantic
 #EXTRA_CFLAGS += -Wstrict-prototypes -Wmissing-prototypes

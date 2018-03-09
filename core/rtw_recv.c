@@ -28,8 +28,6 @@
 
 #endif
 
-
-#ifdef CONFIG_NEW_SIGNAL_STAT_PROCESS
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
 void rtw_signal_stat_timer_hdl(struct timer_list *t);
 #else
@@ -47,11 +45,9 @@ u8 signal_stat_calc_profile[SIGNAL_STAT_CALC_PROFILE_MAX][2] = {
 	{3, 7}	/* Profile 1 => pre_stat : curr_stat = 3 : 7 */
 };
 
-#ifndef RTW_SIGNAL_STATE_CALC_PROFILE	
+#ifndef RTW_SIGNAL_STATE_CALC_PROFILE
 #define RTW_SIGNAL_STATE_CALC_PROFILE SIGNAL_STAT_CALC_PROFILE_0
 #endif
-
-#endif //CONFIG_NEW_SIGNAL_STAT_PROCESS
 
 void _rtw_init_sta_recv_priv(struct sta_recv_priv *psta_recvpriv)
 {
@@ -137,7 +133,6 @@ _func_enter_;
 
 	res = rtw_hal_init_recv_priv(padapter);
 
-#ifdef CONFIG_NEW_SIGNAL_STAT_PROCESS
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
 	timer_setup(&precvpriv->signal_stat_timer, rtw_signal_stat_timer_hdl, 0);
 	#else
@@ -151,7 +146,6 @@ _func_enter_;
 	#else
 	rtw_set_signal_stat_timer(precvpriv);
 	#endif
-#endif //CONFIG_NEW_SIGNAL_STAT_PROCESS
 
 exit:
 
@@ -4621,7 +4615,7 @@ set_timer:
 	_set_timer(&recvpriv->signal_stat_timer, recvpriv->signal_stat_sampling_interval);
 #else
 	rtw_set_signal_stat_timer(recvpriv);
-#endif //CONFIG_NEW_SIGNAL_STAT_PROCESS
+#endif
 
 }
 
