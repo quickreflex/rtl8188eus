@@ -1351,9 +1351,13 @@ void Rtw_Hal_ReadMACAddrFromFile(PADAPTER padapter)
 		set_fs(KERNEL_DS);
 
 		DBG_871X("wifi mac address:\n");
-		vfs_read(fp, source_addr, 18, &pos);
+		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+			kernel_read(fp, source_addr, 18, &pos);
+		#else
+			vfs_read(fp, source_addr, 18, &pos);
+		#endif
+		
 		source_addr[17] = ':';
-
 		head = end = source_addr;
 		for (i=0; i<ETH_ALEN; i++) {
 			while (end && (*end != ':') )
@@ -1418,7 +1422,12 @@ u32 Rtw_Hal_readPGDataFromConfigFile(PADAPTER	padapter)
 
 	DBG_871X("Efuse configure file:\n");
 	for (i=0; i< EFUSE_MAP_SIZE  ; i++) {
-		vfs_read(fp, temp, 2, &pos);
+		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+			kernel_read(fp, temp, 2, &pos);
+		#else
+			vfs_read(fp, temp, 2, &pos);
+		#endif
+		
 		PROMContent[i] = simple_strtoul(temp, NULL, 16 );
 		pos += 1; // Filter the space character
 		DBG_871X("%02X \n", PROMContent[i]);
