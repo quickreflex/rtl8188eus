@@ -214,10 +214,8 @@
  * Interface  Related Config 
  */
 
-#ifndef CONFIG_MINIMAL_MEMORY_USAGE
-	#define CONFIG_USB_TX_AGGREGATION	
-	#define CONFIG_USB_RX_AGGREGATION	
-#endif
+#define CONFIG_USB_TX_AGGREGATION
+#define CONFIG_USB_RX_AGGREGATION
 
 //#define CONFIG_REDUCE_USB_TX_INT		// Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms.
 //#define CONFIG_EASY_REPLACEMENT	
