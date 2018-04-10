@@ -13255,39 +13255,6 @@ IN	PDM_ODM_T 	pDM_Odm)
 
 #if (DM_ODM_SUPPORT_TYPE & (ODM_WIN| ODM_CE))
 
-VOID
-odm_PHY_SaveAFERegisters(
-	IN	PDM_ODM_T	pDM_Odm,
-	IN	pu4Byte		AFEReg,
-	IN	pu4Byte		AFEBackup,
-	IN	u4Byte		RegisterNum
-	)
-{
-	u4Byte	i;
-	
-	//RT_DISP(FINIT, INIT_IQK, ("Save ADDA parameters.\n"));
-	for( i = 0 ; i < RegisterNum ; i++){
-		AFEBackup[i] = ODM_GetBBReg(pDM_Odm, AFEReg[i], bMaskDWord);
-	}
-}
-
-VOID
-odm_PHY_ReloadAFERegisters(
-	IN	PDM_ODM_T	pDM_Odm,
-	IN	pu4Byte		AFEReg,
-	IN	pu4Byte		AFEBackup,
-	IN	u4Byte		RegiesterNum
-	)
-{
-	u4Byte	i;
-
-	//RT_DISP(FINIT, INIT_IQK, ("Reload ADDA power saving parameters !\n"));
-	for(i = 0 ; i < RegiesterNum; i++)
-	{
-		ODM_SetBBReg(pDM_Odm, AFEReg[i], bMaskDWord, AFEBackup[i]);
-	}
-}
-
 //
 // Description:
 //	Set Single/Dual Antenna default setting for products that do not do detection in advance.
@@ -13411,13 +13378,10 @@ ODM_SingleDualAntennaDetection(
 	Reg88c = ODM_GetBBReg(pDM_Odm, rFPGA0_AnalogParameter4, bMaskDWord);
 	Regc08 = ODM_GetBBReg(pDM_Odm, rOFDM0_TRMuxPar, bMaskDWord);
 	Reg874 = ODM_GetBBReg(pDM_Odm, rFPGA0_XCD_RFInterfaceSW, bMaskDWord);
-	Regc50 = ODM_GetBBReg(pDM_Odm, rOFDM0_XAAGCCore1, bMaskDWord);	
+	Regc50 = ODM_GetBBReg(pDM_Odm, rOFDM0_XAAGCCore1, bMaskDWord);
 	
 	// Store AFE Registers
-	if(pDM_Odm->SupportICType & (ODM_RTL8723A|ODM_RTL8192C))
-	odm_PHY_SaveAFERegisters(pDM_Odm, AFE_REG_8723A, AFE_Backup, 16);	
-	else if(pDM_Odm->SupportICType == ODM_RTL8723B)
-		AFE_rRx_Wait_CCA = ODM_GetBBReg(pDM_Odm, rRx_Wait_CCA,bMaskDWord);
+	AFE_rRx_Wait_CCA = ODM_GetBBReg(pDM_Odm, rRx_Wait_CCA,bMaskDWord);
 	
 	//Set PSD 128 pts
 	ODM_SetBBReg(pDM_Odm, rFPGA0_PSDFunction, BIT14|BIT15, 0x0);  //128 pts
@@ -13554,10 +13518,7 @@ ODM_SingleDualAntennaDetection(
 	ODM_SetRFReg(pDM_Odm, ODM_RF_PATH_A, 0x00, bRFRegOffsetMask,RfLoopReg);
 
 	//Reload AFE Registers
-	if(pDM_Odm->SupportICType & (ODM_RTL8723A|ODM_RTL8192C))
-	odm_PHY_ReloadAFERegisters(pDM_Odm, AFE_REG_8723A, AFE_Backup, 16);	
-	else if(pDM_Odm->SupportICType == ODM_RTL8723B)
-		ODM_SetBBReg(pDM_Odm, rRx_Wait_CCA, bMaskDWord, AFE_rRx_Wait_CCA);
+	ODM_SetBBReg(pDM_Odm, rRx_Wait_CCA, bMaskDWord, AFE_rRx_Wait_CCA);
 
 	if(pDM_Odm->SupportICType == ODM_RTL8723A)
 	{
