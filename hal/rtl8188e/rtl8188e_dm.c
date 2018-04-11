@@ -545,9 +545,10 @@ void rtl8188e_init_dm_priv(IN PADAPTER Adapter)
 	Init_ODM_ComInfo_88E(Adapter);
 #ifdef CONFIG_SW_ANTENNA_DIVERSITY
 	//_init_timer(&(pdmpriv->SwAntennaSwitchTimer),  Adapter->pnetdev , odm_SW_AntennaSwitchCallback, Adapter);	
-	ODM_InitAllTimers(podmpriv );	
+	ODM_InitAllTimers(podmpriv );
 #endif
-	ODM_InitDebugSetting(podmpriv);	
+	ODM_InitDebugSetting(podmpriv);
+	pHalData->CurrentTxPwrIdx = 13;
 }
 
 void rtl8188e_deinit_dm_priv(IN PADAPTER Adapter)
@@ -557,8 +558,8 @@ void rtl8188e_deinit_dm_priv(IN PADAPTER Adapter)
 	PDM_ODM_T 		podmpriv = &pHalData->odmpriv;
 	//_rtw_spinlock_free(&pHalData->odm_stainfo_lock);
 #ifdef CONFIG_SW_ANTENNA_DIVERSITY
-	//_cancel_timer_ex(&pdmpriv->SwAntennaSwitchTimer);	
-	ODM_CancelAllTimers(podmpriv);	
+	//_cancel_timer_ex(&pdmpriv->SwAntennaSwitchTimer);
+	ODM_CancelAllTimers(podmpriv);
 #endif
 }
 

@@ -20,6 +20,7 @@
 #define  _IOCTL_CFG80211_C_
 
 #include <drv_types.h>
+#include <hal_data.h>
 
 #ifdef CONFIG_IOCTL_CFG80211
 
@@ -3400,6 +3401,25 @@ static int cfg80211_rtw_set_txpower(struct wiphy *wiphy,
 	enum tx_power_setting type, int dbm)
 #endif
 {
+_adapter *padapter = wiphy_to_adapter(wiphy);
+HAL_DATA_TYPE   *pHalData = GET_HAL_DATA(padapter);
+int value;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)) || defined(COMPAT_KERNEL_RELEASE)
+	value = mbm/100;
+#else
+	value = dbm;
+#endif
+
+if(value < 0)
+	value = 0;
+if(value > 40)
+	value = 40;
+
+if(type == NL80211_TX_POWER_FIXED) {
+	pHalData->CurrentTxPwrIdx = value;
+	rtw_hal_set_tx_power_level(padapter, pHalData->CurrentChannel);
+} else
+	return -EOPNOTSUPP;
 #if 0
 	struct iwm_priv *iwm = wiphy_to_iwm(wiphy);
 	int ret;
@@ -3436,9 +3456,13 @@ static int cfg80211_rtw_get_txpower(struct wiphy *wiphy,
 #endif
 	int *dbm)
 {
+	_adapter *padapter = wiphy_to_adapter(wiphy);
+	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
+
 	DBG_8192C("%s\n", __func__);
 
-	*dbm = (12);
+	//*dbm = (12);
+	*dbm = pHalData->CurrentTxPwrIdx;
 	
 	return 0;
 }
@@ -6045,7 +6069,7 @@ static void rtw_cfg80211_init_ht_capab(struct ieee80211_sta_ht_cap *ht_cap, enum
 	else
 	{
 		DBG_8192C("%s, error rf_type=%d\n", __func__, rf_type);
-	}	
+	}
 	
 }
 
