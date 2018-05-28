@@ -11,8 +11,13 @@ EXTRA_CFLAGS += -DRTW_USE_CFG80211_STA_EVENT=1
 endif
 
 EXTRA_CFLAGS += $(USER_EXTRA_CFLAGS)
-#EXTRA_CFLAGS += -O1
+
+ifeq ($(cc-name),clang)
+EXTRA_CFLAGS += -O3
+else
 EXTRA_CFLAGS += -O2
+endif
+
 #EXTRA_CFLAGS += -Wall
 #EXTRA_CFLAGS += -Wextra
 #EXTRA_CFLAGS += -Werror

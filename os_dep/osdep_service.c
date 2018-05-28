@@ -1765,8 +1765,10 @@ static int readFile(struct file *fp,char *buf,int len)
 { 
 	int rlen=0, sum=0;
 	
-	if (!fp->f_op || !fp->f_op->read) 
+	if (fp != NULL) {
+	    if (!fp->f_op || !fp->f_op->read) 
 		return -EPERM;
+	}
 
 	while(sum<len) {
 		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0))
@@ -1791,17 +1793,19 @@ static int writeFile(struct file *fp,char *buf,int len)
 { 
 	int wlen=0, sum=0;
 	
-	if (!fp->f_op || !fp->f_op->write) 
-		return -EPERM; 
+	if (fp != NULL) {
+		if (!fp->f_op || !fp->f_op->write) 
+			return -EPERM;
 
-	while(sum<len) {
-		wlen=fp->f_op->write(fp,buf+sum,len-sum, &fp->f_pos);
-		if(wlen>0)
-			sum+=wlen;
-		else if(0 != wlen)
-			return wlen;
-		else
-			break;
+		while(sum<len) {
+			wlen=fp->f_op->write(fp,buf+sum,len-sum, &fp->f_pos);
+			if(wlen>0)
+				sum+=wlen;
+			else if(0 != wlen)
+				return wlen;
+			else
+				break;
+		}
 	}
 
 	return sum;

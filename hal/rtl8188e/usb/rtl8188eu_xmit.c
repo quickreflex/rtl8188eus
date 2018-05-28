@@ -809,11 +809,13 @@ s32 rtl8188eu_xmitframe_complete(_adapter *padapter, struct xmit_priv *pxmitpriv
 	if(pfirstframe->attrib.psta != psta){
 		DBG_871X("%s, pattrib->psta(%p) != psta(%p)\n", __func__, pfirstframe->attrib.psta, psta);		
 	}
-	if (psta == NULL) {		
-		DBG_8192C("rtw_xmit_classifier: psta == NULL\n");		
+	if (psta == NULL) {
+		DBG_8192C("rtw_xmit_classifier: psta == NULL\n");
 	}
-	if(!(psta->state &_FW_LINKED)){
-		DBG_871X("%s, psta->state(0x%x) != _FW_LINKED\n", __func__, psta->state);		
+	else {
+		if(!(psta->state &_FW_LINKED)){
+			DBG_871X("%s, psta->state(0x%x) != _FW_LINKED\n", __func__, psta->state);
+		}
 	}
 	
 	switch (pfirstframe->attrib.priority) {

@@ -2501,11 +2501,13 @@ if (padapter->registrypriv.mp_mode == 1)
 	_rtw_memset(ssid, 0, sizeof(NDIS_802_11_SSID)*RTW_SSID_SCAN_AMOUNT);
 	//parsing request ssids, n_ssids
 	for (i = 0; i < request->n_ssids && i < RTW_SSID_SCAN_AMOUNT; i++) {
-		#ifdef CONFIG_DEBUG_CFG80211
-		DBG_8192C("ssid=%s, len=%d\n", ssids[i].ssid, ssids[i].ssid_len);
-		#endif
-		_rtw_memcpy(ssid[i].Ssid, ssids[i].ssid, ssids[i].ssid_len);
-		ssid[i].SsidLength = ssids[i].ssid_len;	
+		if (ssids[i].ssid != NULL) {
+		    #ifdef CONFIG_DEBUG_CFG80211
+		    DBG_8192C("ssid=%s, len=%d\n", ssids[i].ssid, ssids[i].ssid_len);
+		    #endif
+		    _rtw_memcpy(ssid[i].Ssid, ssids[i].ssid, ssids[i].ssid_len);
+		    ssid[i].SsidLength = ssids[i].ssid_len;
+		}
 	}
 
 	/* parsing channels, n_channels */
