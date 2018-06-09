@@ -3193,25 +3193,6 @@ void start_ap_mode(_adapter *padapter)
 
 }
 
-void rtw_ap_bcmc_sta_flush(_adapter *padapter)
-{
-#ifdef CONFIG_CONCURRENT_MODE
-	int cam_id = -1;
-	u8 *addr = adapter_mac_addr(padapter);
-
-	cam_id = rtw_iface_bcmc_id_get(padapter);
-	if (cam_id != INVALID_SEC_MAC_CAM_ID) {
-		RTW_PRINT("clear group key for "ADPT_FMT" addr:"MAC_FMT", camid:%d\n",
-			ADPT_ARG(padapter), MAC_ARG(addr), cam_id);
-		clear_cam_entry(padapter, cam_id);
-		rtw_camid_free(padapter, cam_id);
-		rtw_iface_bcmc_id_set(padapter, INVALID_SEC_MAC_CAM_ID);	/*init default value*/
-	}
-#else
-	invalidate_cam_all(padapter);
-#endif
-}
-
 void stop_ap_mode(_adapter *padapter)
 {
 	_irqL irqL;
@@ -3220,7 +3201,7 @@ void stop_ap_mode(_adapter *padapter)
 	struct sta_info *psta=NULL;
 	struct sta_priv *pstapriv = &padapter->stapriv;
 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
-	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;	
+	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
 	struct wlan_acl_pool *pacl_list = &pstapriv->acl_list;
 	_queue	*pacl_node_q =&pacl_list->acl_node_q;	
 
@@ -3248,17 +3229,16 @@ void stop_ap_mode(_adapter *padapter)
 
 			rtw_list_delete(&paclnode->list);
 				
-			pacl_list->num--;		
-		}		
+			pacl_list->num--;
+		}
 	}	
 	_exit_critical_bh(&(pacl_node_q->lock), &irqL);
 	
 	DBG_871X("%s, free acl_node_queue, num=%d\n", __func__, pacl_list->num);
 	
 	rtw_sta_flush(padapter);
-	rtw_ap_bcmc_sta_flush(padapter);
 
-	//free_assoc_sta_resources	
+	//free_assoc_sta_resources
 	rtw_free_all_stainfo(padapter);
 	
 	psta = rtw_get_bcmc_stainfo(padapter);
@@ -3266,7 +3246,7 @@ void stop_ap_mode(_adapter *padapter)
 	rtw_free_stainfo(padapter, psta);
 	//_exit_critical_bh(&(pstapriv->sta_hash_lock), &irqL);
 	
-	rtw_init_bcmc_stainfo(padapter);	
+	rtw_init_bcmc_stainfo(padapter);
 
 	rtw_free_mlme_priv_ie_data(pmlmepriv);
 
