@@ -4777,36 +4777,6 @@ _func_enter_;
 _func_exit_;
 }
 
-struct qinfo_88e {
-	u32 head:8;
-	u32 pkt_num:8;
-	u32 tail:8;
-	u32 ac:2;
-	u32 macid:6;
-};
-
-
-struct bcn_qinfo_88e {
-	u16 head:8;
-	u16 pkt_num:8;
-};
-
-void dump_qinfo_88e(void *sel, struct qinfo_88e *info, const char *tag)
-{
-	//if (info->pkt_num)
-	DBG_871X_SEL_NL(sel, "%shead:0x%02x, tail:0x%02x, pkt_num:%u, macid:%u, ac:%u\n"
-		, tag ? tag : "", info->head, info->tail, info->pkt_num, info->macid, info->ac
-	);
-}
-
-void dump_bcn_qinfo_88e(void *sel, struct bcn_qinfo_88e *info, const char *tag)
-{
-	//if (info->pkt_num)
-	DBG_871X_SEL_NL(sel, "%shead:0x%02x, pkt_num:%u\n"
-		, tag ? tag : "", info->head, info->pkt_num
-	);
-}
-
 void dump_mac_qinfo_88e(void *sel, _adapter *adapter)
 {
 	u32 q0_info;
@@ -4836,20 +4806,6 @@ void dump_mac_qinfo_88e(void *sel, _adapter *adapter)
 	mg_q_info = rtw_read32(adapter, REG_MGQ_INFO);
 	hi_q_info = rtw_read32(adapter, REG_HGQ_INFO);
 	bcn_q_info = rtw_read16(adapter, REG_BCNQ_INFO);
-	
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q0_info, "Q0 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q1_info, "Q1 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q2_info, "Q2 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q3_info, "Q3 ");
-	/*
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q4_info, "Q4 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q5_info, "Q5 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q6_info, "Q6 ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&q7_info, "Q7 ");
-	*/
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&mg_q_info, "MG ");
-	dump_qinfo_88e(sel, (struct qinfo_88e *)&hi_q_info, "HI ");
-	dump_bcn_qinfo_88e(sel, (struct bcn_qinfo_88e *)&bcn_q_info, "BCN ");
 }
 
 void GetHwReg8188E(_adapter *adapter, u8 variable, u8 *val)
@@ -4861,9 +4817,6 @@ _func_enter_;
 	switch (variable) {
 	case HW_VAR_SYS_CLKR:
 		*val = rtw_read8(adapter, REG_SYS_CLKR);
-		break;
-	case HW_VAR_DUMP_MAC_QUEUE_INFO:
-		dump_mac_qinfo_88e(val, adapter);
 		break;
 	default:
 		GetHwReg(adapter, variable, val);
