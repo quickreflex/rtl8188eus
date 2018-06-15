@@ -166,7 +166,7 @@ void dump_adapters_status(void *sel, struct dvobj_priv *dvobj)
 		if (iface) {
 			DBG_871X_SEL_NL(sel, "%2d %-8s %4hhu %3u,%u,%u "MLME_STATE_FMT" %s%s\n"
 				, i, ADPT_ARG(iface)
-				, get_iface_type(iface)
+				, (unsigned char)get_iface_type(iface)
 				, iface->mlmeextpriv.cur_channel
 				, iface->mlmeextpriv.cur_bwmode
 				, iface->mlmeextpriv.cur_ch_offset

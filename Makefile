@@ -34,13 +34,9 @@ EXTRA_CFLAGS += -Wno-type-limits
 EXTRA_CFLAGS += -Wno-uninitialized
 
 EXTRA_CFLAGS += -I$(src)/include
-#EXTRA_CFLAGS += -fdata-sections
-#EXTRA_CFLAGS += -ffunction-sections
-#EXTRA_CFLAGS += -Wl,--gc-sections
-EXTRA_CFLAGS += -Wl,-s
-EXTRA_CFLAGS += -pipe
+#EXTRA_CFLAGS += -Wl,-s
 
-#EXTRA_LDFLAGS += --strip-debug
+EXTRA_LDFLAGS += --strip-debug
 
 CONFIG_AUTOCFG_CP = n
 

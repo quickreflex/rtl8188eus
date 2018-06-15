@@ -278,7 +278,7 @@ static struct usb_device_id rtw_usb_id_tbl[] ={
 	{USB_DEVICE(0x2001, 0x3311),.driver_info = RTL8188E}, /* DLink GO-USB-N150 REV B1 */
 	{USB_DEVICE(0x056E, 0x4008),.driver_info = RTL8188E}, /* Elecom WDC-150SU2M */
 	{USB_DEVICE(0x2357, 0x010c),.driver_info = RTL8188E}, /* TP-Link TL-WN722N v2 */
-	{USB_DEVICE(0x0BDA, 0x8179),.driver_info = RTL8188E}, /* TP-Link TL-WN723N v3, TL-WN725N v2, TL-WN727N v4 (CN?) */
+	{USB_DEVICE(0x0BDA, 0x8179),.driver_info = RTL8188E}, /* TP-Link TL-WN723N v3, TL-WN725N v2-v3, TL-WN727N v4 (CN?) */
 	{USB_DEVICE(0x0BDA, 0xffef),.driver_info = RTL8188E}, /* Rosewill RNX-N150NUB */
 #endif
 
