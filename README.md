@@ -8,11 +8,29 @@ Compiling & Building
 To compile the driver, you need to have make and a compiler installed. In addition,
 you must have the kernel headers installed. If you do not understand what this means,
 consult your distro. if compile a new kernel, you will need to set two parameters
-with make: KSRC=path_to_kernel_source and KVER=kernel_version. 
-### Compiling
+with make: KSRC=path_to_kernel_source and KVER=kernel_version. The same goes for installation.
 
-> make all
+### Download
+```
+git clone https://github.com/quickreflex/rtl8188eus.git
+cd rtl8188eu
+```
 
-### Installing
+### Compiling & Installing
+```
+make all
+make install
+```
 
-> sudo make install
+Switch modes
+---------
+### For setting monitor mode
+```
+ifconfig wlan0 down
+iw dev wlan0 set type monitor
+ifconfig wlan0 up
+```
+### For setting TX power
+```
+iw wlan0 set txpower fixed 1300
+```
