@@ -842,10 +842,8 @@ int	_rtw_memcmp(void *dst, void *src, u32 sz)
 	else
 		return _FALSE;
 
-#endif	
-	
-	
-	
+#endif
+
 }
 
 void _rtw_memset(void *pbuf, int c, u32 sz)
@@ -868,9 +866,14 @@ void _rtw_memset(void *pbuf, int c, u32 sz)
 
 }
 
+char *_rtw_strncpy(char *dest, const char *src, size_t nb)
+{
+	return strncpy(dest, src, nb);
+}
+
 #ifdef PLATFORM_FREEBSD
 static inline void __list_add(_list *pnew, _list *pprev, _list *pnext)
- {
+{
          pnext->prev = pnew;
          pnew->next = pnext;
          pnew->prev = pprev;

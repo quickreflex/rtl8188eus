@@ -717,7 +717,7 @@ int rtw_ndev_init(struct net_device *dev)
 	_adapter *adapter = rtw_netdev_priv(dev);
 
 	DBG_871X_LEVEL(_drv_always_, FUNC_ADPT_FMT"\n", FUNC_ADPT_ARG(adapter));
-	strncpy(adapter->old_ifname, dev->name, IFNAMSIZ);
+	_rtw_strncpy(adapter->old_ifname, dev->name, IFNAMSIZ);
 	rtw_adapter_proc_init(dev);
 
 	return 0;

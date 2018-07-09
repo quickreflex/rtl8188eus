@@ -860,7 +860,7 @@ static void process_spec_devid(const struct usb_device_id *pdid)
 		if((pdid->idVendor==vid) && (pdid->idProduct==pid) && (flags&SPEC_DEV_ID_ASSIGN_IFNAME))
 		{
 			extern char* ifname;
-			strncpy(ifname, "wlan10", 6);
+			_rtw_strncpy(ifname, "wlan10", 6);
 			//DBG_871X("%s()-%d: ifname=%s, vid=%04X, pid=%04X\n", __FUNCTION__, __LINE__, ifname, vid, pid);
 		}
 #endif /* RTK_DMP_PLATFORM */

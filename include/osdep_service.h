@@ -262,6 +262,7 @@ extern void	rtw_mfree2d(void *pbuf, int h, int w, int size);
 extern void	_rtw_memcpy(void* dec, void* sour, u32 sz);
 extern int	_rtw_memcmp(void *dst, void *src, u32 sz);
 extern void	_rtw_memset(void *pbuf, int c, u32 sz);
+extern char	*_rtw_strncpy(char *dest, const char *src, size_t nb);
 
 extern void	_rtw_init_listhead(_list *list);
 extern u32	rtw_is_list_empty(_list *phead);
