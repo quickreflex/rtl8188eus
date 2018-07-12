@@ -979,13 +979,11 @@ void rtw_list_insert_tail(_list *plist, _list *phead)
 	
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 void rtw_init_timer(_timer *ptimer, void *padapter, void *pfunc)
 {
 	_adapter *adapter = (_adapter *)padapter;
 	_init_timer(ptimer, adapter->pnetdev, pfunc, adapter);
 }
-#endif
 
 /*
 

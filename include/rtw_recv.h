@@ -441,9 +441,7 @@ struct recv_priv
 	struct signal_stat signal_strength_data;
 };
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 #define rtw_set_signal_stat_timer(recvpriv) _set_timer(&(recvpriv)->signal_stat_timer, (recvpriv)->signal_stat_sampling_interval)
-#endif
 
 struct sta_recv_priv {
 

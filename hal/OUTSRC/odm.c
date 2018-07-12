@@ -698,17 +698,9 @@ ODM_UpdateInitRateWorkItemCallback(
     IN PVOID            pContext
     );
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-		VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext);
-	#else
-		VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t);
-	#endif
+	VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext);
 #elif (DM_ODM_SUPPORT_TYPE & (ODM_AP|ODM_ADSL))
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-		VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext);
-	#else
-		VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t);
-	#endif
+	VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext);
 #endif
 
 
@@ -5786,12 +5778,8 @@ ODM_InitAllTimers(
 #endif
 
 #if(defined(CONFIG_SW_ANTENNA_DIVERSITY))
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-		ODM_InitializeTimer(pDM_Odm,&pDM_Odm->DM_SWAT_Table.SwAntennaSwitchTimer,
-			(RT_TIMER_CALL_BACK)odm_SwAntDivChkAntSwitchCallback, NULL, "SwAntennaSwitchTimer");
-	#else
-		timer_setup(&pDM_Odm->DM_SWAT_Table.SwAntennaSwitchTimer, odm_SwAntDivChkAntSwitchCallback, 0);
-	#endif
+	ODM_InitializeTimer(pDM_Odm,&pDM_Odm->DM_SWAT_Table.SwAntennaSwitchTimer,
+		(RT_TIMER_CALL_BACK)odm_SwAntDivChkAntSwitchCallback, NULL, "SwAntennaSwitchTimer");
 #endif
 	
 #if (!(DM_ODM_SUPPORT_TYPE == ODM_CE))
@@ -7144,34 +7132,18 @@ odm_SwAntDivChkAntSwitchWorkitemCallback(
 
 }
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext)
-#else
-VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t)
-#endif
 {
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-		PDM_ODM_T	pDM_Odm = (PDM_ODM_T)FunctionContext;
-	#else
-		PDM_ODM_T	pDM_Odm = (PDM_ODM_T)t;
-	#endif
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)FunctionContext;
 	PADAPTER	padapter = pDM_Odm->Adapter;
 	if(padapter->net_closed == _TRUE)
 	    return;
 	odm_SwAntDivChkAntSwitch(pDM_Odm, SWAW_STEP_DETERMINE);	
 }
 #elif (DM_ODM_SUPPORT_TYPE & (ODM_AP|ODM_ADSL))
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext)
-#else
-VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t)
-#endif
 {
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-		PDM_ODM_T	pDM_Odm = (PDM_ODM_T)FunctionContext;
-	#else
-		PDM_ODM_T	pDM_Odm = (PDM_ODM_T)t;
-	#endif
+	PDM_ODM_T	pDM_Odm = (PDM_ODM_T)FunctionContext;
 	odm_SwAntDivChkAntSwitch(pDM_Odm, SWAW_STEP_DETERMINE);
 }
 #endif
@@ -7195,17 +7167,9 @@ VOID odm_SwAntDetectInit(	IN		PDM_ODM_T		pDM_Odm){}
 VOID odm_SwAntDivChkAntSwitchCallback(	PRT_TIMER		pTimer){}
 VOID odm_SwAntDivChkAntSwitchWorkitemCallback(    IN PVOID            pContext    ){}
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext){}
-#else
-VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t) {}
-#endif
 #elif (DM_ODM_SUPPORT_TYPE & (ODM_AP|ODM_ADSL))
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
 VOID odm_SwAntDivChkAntSwitchCallback(void *FunctionContext){}
-#else
-VOID odm_SwAntDivChkAntSwitchCallback(struct timer_list *t) {}
-#endif
 #endif
 
 #endif //#if(defined(CONFIG_SW_ANTENNA_DIVERSITY))

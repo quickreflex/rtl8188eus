@@ -148,7 +148,13 @@ typedef enum _RT_SPINLOCK_TYPE{
 
 	typedef struct rtl8192cd_priv	*prtl8192cd_priv;
 	typedef struct stat_info		STA_INFO_T,*PSTA_INFO_T;
+	
+	#if defined (LINUX_VERSION_CODE) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	typedef struct legacy_timer_emu		RT_TIMER, *PRT_TIMER;
+	#else
 	typedef struct timer_list		RT_TIMER, *PRT_TIMER;
+	#endif
+	
 	typedef  void *				RT_TIMER_CALL_BACK;
 
 	#define DEV_BUS_TYPE		RT_PCI_INTERFACE
@@ -175,7 +181,13 @@ typedef enum _RT_SPINLOCK_TYPE{
 
 	typedef struct rtl8192cd_priv	*prtl8192cd_priv;
 	typedef struct stat_info		STA_INFO_T,*PSTA_INFO_T;
+	
+	#if defined (LINUX_VERSION_CODE) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	typedef struct legacy_timer_emu		RT_TIMER, *PRT_TIMER;
+	#else
 	typedef struct timer_list		RT_TIMER, *PRT_TIMER;
+	#endif
+	
 	typedef  void *				RT_TIMER_CALL_BACK;
 	
 	#define DEV_BUS_TYPE		RT_PCI_INTERFACE
@@ -238,7 +250,12 @@ typedef enum _RT_SPINLOCK_TYPE{
 		#define	ODM_ENDIAN_TYPE			ODM_ENDIAN_BIG
 	#endif
 	
+	#if defined (LINUX_VERSION_CODE) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	typedef struct legacy_timer_emu		RT_TIMER, *PRT_TIMER;
+	#else
 	typedef struct timer_list		RT_TIMER, *PRT_TIMER;
+	#endif
+	
 	typedef  void *				RT_TIMER_CALL_BACK;
 	#define	STA_INFO_T			struct sta_info
 	#define	PSTA_INFO_T		struct sta_info *

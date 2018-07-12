@@ -536,7 +536,7 @@ ODM_SetTimer(
 #if(DM_ODM_SUPPORT_TYPE & (ODM_AP|ODM_ADSL))
 	mod_timer(pTimer, jiffies + (msDelay+9)/10);	
 #elif(DM_ODM_SUPPORT_TYPE & ODM_CE)
-	_set_timer(pTimer,msDelay ); //ms
+	_set_timer(pTimer, msDelay ); //ms
 #elif(DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	PADAPTER		Adapter = pDM_Odm->Adapter;
 	PlatformSetTimer(Adapter, pTimer, msDelay);
@@ -559,11 +559,7 @@ ODM_InitializeTimer(
 	init_timer(pTimer);	
 #elif(DM_ODM_SUPPORT_TYPE & ODM_CE)
 	PADAPTER Adapter = pDM_Odm->Adapter;
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	timer_setup(pTimer, CallBackFunc, 0);
-	#else
 	_init_timer(pTimer, Adapter->pnetdev, CallBackFunc, pDM_Odm);
-	#endif
 	
 #elif(DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	PADAPTER Adapter = pDM_Odm->Adapter;

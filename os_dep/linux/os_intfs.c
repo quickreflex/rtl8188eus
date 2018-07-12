@@ -1133,12 +1133,7 @@ u8 rtw_reset_drv_sw(_adapter *padapter)
 	//mlmeextpriv
 	padapter->mlmeextpriv.sitesurvey_res.state= SCAN_DISABLE;
 
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_set_timer(&padapter->recvpriv.signal_stat_timer, padapter->recvpriv.signal_stat_sampling_interval);
-#else
 	rtw_set_signal_stat_timer(&padapter->recvpriv);
-#endif
 
 	return ret8;
 }

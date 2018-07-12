@@ -28,11 +28,7 @@
 
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-void rtw_signal_stat_timer_hdl(struct timer_list *t);
-#else
 void rtw_signal_stat_timer_hdl(RTW_TIMER_HDL_ARGS);
-#endif
 
 enum {
 	SIGNAL_STAT_CALC_PROFILE_0 = 0,
@@ -133,19 +129,11 @@ _func_enter_;
 
 	res = rtw_hal_init_recv_priv(padapter);
 
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	timer_setup(&precvpriv->signal_stat_timer, rtw_signal_stat_timer_hdl, 0);
-	#else
 	rtw_init_timer(&precvpriv->signal_stat_timer, padapter, RTW_TIMER_HDL_NAME(signal_stat));
-	#endif
 
 	precvpriv->signal_stat_sampling_interval = 2000; //ms
 	//precvpriv->signal_stat_converging_constant = 5000; //ms
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_set_timer(&precvpriv->signal_stat_timer, precvpriv->signal_stat_sampling_interval);
-	#else
 	rtw_set_signal_stat_timer(precvpriv);
-	#endif
 
 exit:
 
@@ -4508,17 +4496,9 @@ _func_exit_;
 	return ret;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-void rtw_signal_stat_timer_hdl(struct timer_list *t)
-#else
 void rtw_signal_stat_timer_hdl(RTW_TIMER_HDL_ARGS)
-#endif
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *padapter = from_timer(padapter, t, recvpriv.signal_stat_timer);
-#else
 	_adapter *padapter = (_adapter *)FunctionContext;
-#endif
 	struct recv_priv *recvpriv = &padapter->recvpriv;
 	
 	u32 tmp_s, tmp_q;
@@ -4611,11 +4591,7 @@ void rtw_signal_stat_timer_hdl(RTW_TIMER_HDL_ARGS)
 	}
 
 set_timer:
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_set_timer(&recvpriv->signal_stat_timer, recvpriv->signal_stat_sampling_interval);
-#else
 	rtw_set_signal_stat_timer(recvpriv);
-#endif
 
 }
 

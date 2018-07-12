@@ -3548,17 +3548,9 @@ _func_enter_;
 _func_exit_;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void ro_ch_timer_process(struct timer_list *t)
-#else
  static void ro_ch_timer_process(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, cfg80211_wdinfo.remain_on_ch_timer);
-#else
     _adapter *adapter = (_adapter *)FunctionContext;
-#endif
     struct rtw_wdev_priv *pwdev_priv = adapter_wdev_data(adapter);
 
 	//printk("%s \n", __FUNCTION__);
@@ -4329,11 +4321,7 @@ void rtw_init_cfg80211_wifidirect_info( _adapter*	padapter)
 
 	_rtw_memset(pcfg80211_wdinfo, 0x00, sizeof(struct cfg80211_wifidirect_info) );
 	
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-		timer_setup(&pcfg80211_wdinfo->remain_on_ch_timer, ro_ch_timer_process, 0);
-	#else
-		_init_timer(&pcfg80211_wdinfo->remain_on_ch_timer, padapter->pnetdev, ro_ch_timer_process, padapter);
-	#endif
+	_init_timer(&pcfg80211_wdinfo->remain_on_ch_timer, padapter->pnetdev, ro_ch_timer_process, padapter);
 
 }
 #endif //CONFIG_IOCTL_CFG80211	
@@ -4655,17 +4643,9 @@ _func_exit_;
 }
 #endif // CONFIG_P2P_PS
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void reset_ch_sitesurvey_timer_process(struct timer_list *t)
-#else
  static void reset_ch_sitesurvey_timer_process(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, wdinfo.reset_ch_sitesurvey);
-#else
 	_adapter *adapter = (_adapter *)FunctionContext;
-#endif
 	struct	wifidirect_info		*pwdinfo = &adapter->wdinfo;
 
 	if(rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
@@ -4682,17 +4662,9 @@ _func_exit_;
 	pwdinfo->rx_invitereq_info.scan_op_ch_only = 0;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void reset_ch_sitesurvey_timer_process2(struct timer_list *t)
-#else
  static void reset_ch_sitesurvey_timer_process2(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, wdinfo.reset_ch_sitesurvey2);
-#else
 	_adapter *adapter = (_adapter *)FunctionContext;
-#endif
 	struct	wifidirect_info		*pwdinfo = &adapter->wdinfo;
 
 	if(rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
@@ -4709,17 +4681,9 @@ _func_exit_;
 	pwdinfo->p2p_info.scan_op_ch_only = 0;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void restore_p2p_state_timer_process (struct timer_list *t)
-#else
  static void restore_p2p_state_timer_process(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, wdinfo.restore_p2p_state_timer);
-#else
 	_adapter *adapter = (_adapter *)FunctionContext;
-#endif
 	struct	wifidirect_info		*pwdinfo = &adapter->wdinfo;
 
 	if(rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
@@ -4728,17 +4692,9 @@ _func_exit_;
 	p2p_protocol_wk_cmd( adapter, P2P_RESTORE_STATE_WK );
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void pre_tx_scan_timer_process (struct timer_list *t)
-#else
  static void pre_tx_scan_timer_process(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, wdinfo.pre_tx_scan_timer);
-#else
 	_adapter *adapter = (_adapter *) FunctionContext;
-#endif
 	struct	wifidirect_info				*pwdinfo = &adapter->wdinfo;
 	_irqL							irqL;
 	struct mlme_priv					*pmlmepriv = &adapter->mlmepriv;
@@ -4781,17 +4737,9 @@ _func_exit_;
 	_exit_critical_bh(&pmlmepriv->lock, &irqL);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
- static void find_phase_timer_process(struct timer_list *t)
-#else
  static void find_phase_timer_process(void *FunctionContext)
-#endif
  {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	_adapter *adapter = from_timer(adapter, t, wdinfo.find_phase_timer);
-#else
 	_adapter *adapter = (_adapter *)FunctionContext;
-#endif
 	struct	wifidirect_info		*pwdinfo = &adapter->wdinfo;
 
 	if(rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
@@ -4861,16 +4809,6 @@ int rtw_init_wifi_display_info(_adapter* padapter)
 void rtw_init_wifidirect_timers(_adapter* padapter)
 {
 	struct wifidirect_info *pwdinfo = &padapter->wdinfo;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-	timer_setup(&pwdinfo->find_phase_timer, find_phase_timer_process, 0);
-	timer_setup(&pwdinfo->restore_p2p_state_timer, restore_p2p_state_timer_process, 0);
-	timer_setup(&pwdinfo->pre_tx_scan_timer, pre_tx_scan_timer_process, 0);
-	timer_setup(&pwdinfo->reset_ch_sitesurvey, reset_ch_sitesurvey_timer_process, 0);
-	timer_setup(&pwdinfo->reset_ch_sitesurvey2, reset_ch_sitesurvey_timer_process2, 0);
-#ifdef CONFIG_CONCURRENT_MODE
-	timer_setup(&pwdinfo->ap_p2p_switch_timer, ap_p2p_switch_timer_process, 0);
-#endif
-#else
 	_init_timer( &pwdinfo->find_phase_timer, padapter->pnetdev, find_phase_timer_process, padapter );
 	_init_timer( &pwdinfo->restore_p2p_state_timer, padapter->pnetdev, restore_p2p_state_timer_process, padapter );
 	_init_timer( &pwdinfo->pre_tx_scan_timer, padapter->pnetdev, pre_tx_scan_timer_process, padapter );
@@ -4878,7 +4816,6 @@ void rtw_init_wifidirect_timers(_adapter* padapter)
 	_init_timer( &pwdinfo->reset_ch_sitesurvey2, padapter->pnetdev, reset_ch_sitesurvey_timer_process2, padapter );
 #ifdef CONFIG_CONCURRENT_MODE
 	_init_timer( &pwdinfo->ap_p2p_switch_timer, padapter->pnetdev, ap_p2p_switch_timer_process, padapter );
-#endif
 #endif
 }
 
@@ -5274,14 +5211,9 @@ int rtw_p2p_enable(_adapter *padapter, enum P2P_ROLE role)
 			_cancel_timer_ex( &pwdinfo->pre_tx_scan_timer);
 			_cancel_timer_ex( &pwdinfo->reset_ch_sitesurvey);
 			_cancel_timer_ex( &pwdinfo->reset_ch_sitesurvey2);
-			#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0)
-				reset_ch_sitesurvey_timer_process(&pwdinfo->reset_ch_sitesurvey);
-				reset_ch_sitesurvey_timer_process2(&pwdinfo->reset_ch_sitesurvey2);
-			#else
-				reset_ch_sitesurvey_timer_process(padapter);
-				reset_ch_sitesurvey_timer_process2(padapter);
-			#endif
-			#ifdef CONFIG_CONCURRENT_MODE			
+			reset_ch_sitesurvey_timer_process(padapter);
+			reset_ch_sitesurvey_timer_process2(padapter);
+			#ifdef CONFIG_CONCURRENT_MODE
 			_cancel_timer_ex( &pwdinfo->ap_p2p_switch_timer);
 			#endif
 			rtw_p2p_set_state(pwdinfo, P2P_STATE_NONE);
