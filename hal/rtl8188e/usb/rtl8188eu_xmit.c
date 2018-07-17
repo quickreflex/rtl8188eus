@@ -528,6 +528,31 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz , u8 ba
 	odm_set_tx_ant_by_tx_info(&pHalData->odmpriv, pmem, pattrib->mac_id);
 #endif
 
+/* injected frame */
+	if(pattrib->inject == 0xa5) {
+		SET_TX_DESC_ANTSEL_B_88E(ptxdesc, 1);
+		if (pattrib->retry_ctrl == _TRUE) {
+			SET_TX_DESC_ANTSEL_B_88E(ptxdesc, 6);
+		} else {
+			SET_TX_DESC_ANTSEL_B_88E(ptxdesc, 0);
+		}
+		if(pattrib->sgi == _TRUE) {
+			SET_TX_DESC_ANTSEL_B_88E(ptxdesc, 1);
+		} else {
+			SET_TX_DESC_ANTSEL_B_88E(ptxdesc, 0);
+		}
+		SET_TX_DESC_SEC_TYPE_8188E(ptxdesc, 1);
+		SET_TX_DESC_SEC_TYPE_8188E(ptxdesc, MRateToHwRate(pattrib->rate));
+		if (pattrib->ldpc)
+			SET_TX_DESC_ANTSEL_C_88E(ptxdesc, 1);
+		SET_TX_DESC_ANTSEL_B_88E(ptxdesc, pattrib->stbc & 3);
+		//SET_TX_DESC_GF_88E(ptxdesc, 1); // no MCS rates if sets, GreenField?
+		//SET_TX_DESC_LSIG_TXOP_EN_88E(ptxdesc, 1);
+		//SET_TX_DESC_HTC_88E(ptxdesc, 1);
+		//SET_TX_DESC_NO_ACM_88E(ptxdesc, 1);
+		SET_TX_DESC_ANTSEL_B_88E(ptxdesc, pattrib->bwmode); // 0 - 20 MHz, 1 - 40 MHz, 2 - 80 MHz
+	}
+
 	rtl8188eu_cal_txdesc_chksum(ptxdesc);
 	_dbg_dump_tx_info(padapter, pxmitframe->frame_tag, ptxdesc);
 	return pull;
@@ -655,6 +680,7 @@ static s32 rtw_dump_xframe(_adapter *padapter, struct xmit_frame *pxmitframe)
 		rtw_count_tx_stats(padapter, pxmitframe, sz);
 
 		/* RTW_INFO("rtw_write_port, w_sz=%d, sz=%d, txdesc_sz=%d, tid=%d\n", w_sz, sz, w_sz-sz, pattrib->priority);       */
+		RT_TRACE(_module_rtl871x_xmit_c_,_drv_info_,("rtw_write_port, w_sz=%d\n", w_sz));
 
 		mem_addr += w_sz;
 
@@ -1273,7 +1299,7 @@ s32 rtl8188eu_hostap_mgnt_xmit_entry(_adapter *padapter, _pkt *pkt)
 	pipe = usb_sndbulkpipe(pdvobj->pusbdev, pHalData->Queue2EPNum[(u8)MGT_QUEUE_INX] & 0x0f);
 
 	usb_fill_bulk_urb(urb, pdvobj->pusbdev, pipe,
-		pxmit_skb->data, pxmit_skb->len, rtl8192cu_hostap_mgnt_xmit_cb, pxmit_skb);
+	pxmit_skb->data, pxmit_skb->len, rtl8818eu_hostap_mgnt_xmit_cb, pxmit_skb);
 
 	urb->transfer_flags |= URB_ZERO_PACKET;
 	usb_anchor_urb(urb, &phostapdpriv->anchored);
