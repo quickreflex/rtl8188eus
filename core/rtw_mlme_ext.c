@@ -7298,24 +7298,14 @@ void update_monitor_frame_attrib(_adapter *padapter, struct pkt_attrib *pattrib)
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	u8	wireless_mode;
 	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
-	struct xmit_priv		*pxmitpriv = &padapter->xmitpriv;
-	struct sta_info		*psta = NULL;
-	struct sta_priv		*pstapriv = &padapter->stapriv;
-	struct sta_info *pbcmc_sta = NULL;
-
-	psta = rtw_get_stainfo(pstapriv, pattrib->ra);
-	pbcmc_sta = rtw_get_bcmc_stainfo(padapter);
+	struct xmit_priv 		*pxmitpriv = &padapter->xmitpriv;
 
 	pattrib->hdrlen = 24;
 	pattrib->nr_frags = 1;
 	pattrib->priority = 7;
+	pattrib->inject = 0xa5;
 
-	if (pbcmc_sta)
-		pattrib->mac_id = pbcmc_sta->mac_id;
-	else {
-		pattrib->mac_id = 0;
-		RTW_INFO("mgmt use mac_id 0 will affect RA\n");
-	}
+	pattrib->mac_id = 0;
 	pattrib->qsel = QSLT_MGNT;
 
 	pattrib->pktlen = 0;
@@ -7326,22 +7316,22 @@ void update_monitor_frame_attrib(_adapter *padapter, struct pkt_attrib *pattrib)
 		wireless_mode = WIRELESS_11G;
 
 	pattrib->raid = rtw_get_mgntframe_raid(padapter, wireless_mode);
-#ifdef CONFIG_80211AC_VHT
-	if (pHalData->rf_type == RF_1T1R)
-		pattrib->raid = RATEID_IDX_VHT_1SS;
-	else if (pHalData->rf_type == RF_2T2R || pHalData->rf_type == RF_2T4R)
-		pattrib->raid = RATEID_IDX_VHT_2SS;
-	else if (pHalData->rf_type == RF_3T3R)
-		pattrib->raid = RATEID_IDX_VHT_3SS;
-	else
-		pattrib->raid = RATEID_IDX_BGN_40M_1SS;
-#endif
+	#ifdef CONFIG_80211AC_VHT
+		if (pHalData->rf_type == RF_1T1R)
+			pattrib->raid = RATEID_IDX_VHT_1SS;
+		else if (pHalData->rf_type == RF_2T2R || pHalData->rf_type == RF_2T4R)
+			pattrib->raid = RATEID_IDX_VHT_2SS;
+		else if (pHalData->rf_type == RF_3T3R)
+			pattrib->raid = RATEID_IDX_VHT_3SS;
+		else
+			pattrib->raid = RATEID_IDX_BGN_40M_1SS;
+	#endif
 
-#ifdef CONFIG_80211AC_VHT
-	pattrib->rate = MGN_VHT1SS_MCS9;
-#else
-	pattrib->rate = MGN_MCS7;
-#endif
+	#ifdef CONFIG_80211AC_VHT
+		pattrib->rate = MGN_VHT1SS_MCS9;
+	#else
+		pattrib->rate = MGN_MCS7;
+	#endif
 
 	pattrib->encrypt = _NO_PRIVACY_;
 	pattrib->bswenc = _FALSE;
@@ -7354,7 +7344,7 @@ void update_monitor_frame_attrib(_adapter *padapter, struct pkt_attrib *pattrib)
 
 	pattrib->seqnum = pmlmeext->mgnt_seq;
 
-	pattrib->retry_ctrl = _TRUE;
+	pattrib->retry_ctrl = _FALSE;
 
 	pattrib->mbssid = 0;
 	pattrib->hw_ssn_sel = pxmitpriv->hw_ssn_seq_no;
