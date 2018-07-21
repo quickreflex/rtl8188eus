@@ -29,6 +29,7 @@ Switch modes
 * IBSS
 * managed
 * AP
+* monitor
 * P2P-client
 * P2P-GO
 ```
@@ -37,4 +38,8 @@ Switch modes
 ifconfig wlan0 down
 iw dev wlan0 set type managed
 ifconfig wlan0 up
+```
+### For setting TX power
+```
+iw wlan0 set txpower fixed 1300
 ```
