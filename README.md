@@ -24,10 +24,19 @@ make install
 
 Switch modes
 ---------
-### For setting monitor mode
+### Supported interface modes
+```
+* IBSS
+* managed
+* AP
+* monitor
+* P2P-client
+* P2P-GO
+```
+### For setting interface modes
 ```
 ifconfig wlan0 down
-iw dev wlan0 set type monitor
+iw dev wlan0 set type managed
 ifconfig wlan0 up
 ```
 ### For setting TX power

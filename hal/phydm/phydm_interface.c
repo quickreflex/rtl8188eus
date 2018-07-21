@@ -606,7 +606,7 @@ odm_cancel_timer(
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
 	del_timer(p_timer);
 #elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
-	_cancel_timer((_timer *)p_timer, (u8 *)1);
+	_cancel_timer_ex((_timer *)p_timer);
 #elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	struct _ADAPTER *adapter = p_dm_odm->adapter;
 	PlatformCancelTimer(adapter, p_timer);
