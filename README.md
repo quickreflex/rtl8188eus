@@ -12,7 +12,7 @@ with make: KSRC=path_to_kernel_source and KVER=kernel_version. The same goes for
 
 ### Download
 ```
-git clone https://github.com/quickreflex/rtl8188eus.git
+git clone -b v5.2.2.4 https://github.com/quickreflex/rtl8188eus.git
 cd rtl8188eu
 ```
 
