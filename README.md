@@ -22,6 +22,13 @@ make all
 make install
 ```
 
+Or with DKMS
+```
+dkms add .
+dkms build 8188eu/1.0
+dkms install 8188eu/1.0
+```
+
 Switch modes
 ---------
 ### For setting monitor mode
