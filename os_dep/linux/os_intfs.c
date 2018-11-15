@@ -620,7 +620,9 @@ unsigned int rtw_classify8021d(struct sk_buff *skb)
 }
 
 static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 1)
+    , struct net_device *accel_priv /*this is, to best of my knowledge, unused */
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
 	, void *accel_priv
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
