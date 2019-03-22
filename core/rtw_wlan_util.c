@@ -2715,8 +2715,8 @@ void update_beacon_info(_adapter *padapter, u8 *pframe, uint pkt_len, struct sta
 		case _VENDOR_SPECIFIC_IE_:
 			/* to update WMM paramter set while receiving beacon */
 			if (_rtw_memcmp(pIE->data, WMM_PARA_OUI, 6) && pIE->Length == WLAN_WMM_LEN)	/* WMM */
-				(WMM_param_handler(padapter, pIE)) ? report_wmm_edca_update(padapter) : 0;
-
+				if (WMM_param_handler(padapter, pIE)) report_wmm_edca_update(padapter);
+			
 			break;
 
 		case _HT_EXTRA_INFO_IE_:	/* HT info */
