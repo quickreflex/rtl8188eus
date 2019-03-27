@@ -1,3 +1,17 @@
+/******************************************************************************
+ *
+ * Copyright(c) 2016 - 2017 Realtek Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ *****************************************************************************/
 #ifdef CONFIG_WAPI_SUPPORT
 
 #include <linux/unistd.h>
@@ -438,7 +452,8 @@ add to support WAPI to N-mode
 *****************************************************************************/
 u8 rtw_wapi_check_for_drop(
 	_adapter *padapter,
-	union recv_frame *precv_frame
+	union recv_frame *precv_frame,
+	u8 *ehdr_ops
 )
 {
 	PRT_WAPI_T     pWapiInfo = &(padapter->wapiInfo);
@@ -449,7 +464,7 @@ u8 rtw_wapi_check_for_drop(
 	struct recv_frame_hdr *precv_hdr = &precv_frame->u.hdr;
 	u8					WapiAEPNInitialValueSrc[16] = {0x37, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C} ;
 	u8					WapiAEMultiCastPNInitialValueSrc[16] = {0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C} ;
-	u8					*ptr = precv_frame->u.hdr.rx_data;
+	u8					*ptr = ehdr_ops;
 	int					i;
 
 	WAPI_TRACE(WAPI_RX, "===========> %s\n", __FUNCTION__);
@@ -1237,4 +1252,61 @@ bool rtw_wapi_drop_for_key_absent(_adapter *padapter, u8 *pRA)
 	return bDrop;
 }
 
+void rtw_wapi_set_set_encryption(_adapter *padapter, struct ieee_param *param)
+{
+	struct security_priv *psecuritypriv = &padapter->securitypriv;
+	struct mlme_priv	*pmlmepriv = &padapter->mlmepriv;
+	PRT_WAPI_T			pWapiInfo = &padapter->wapiInfo;
+	PRT_WAPI_STA_INFO	pWapiSta;
+	u8					WapiASUEPNInitialValueSrc[16] = {0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C} ;
+	u8					WapiAEPNInitialValueSrc[16] = {0x37, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C} ;
+	u8					WapiAEMultiCastPNInitialValueSrc[16] = {0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C, 0x36, 0x5C} ;
+
+	if (param->u.crypt.set_tx == 1) {
+		list_for_each_entry(pWapiSta, &pWapiInfo->wapiSTAUsedList, list) {
+			if (_rtw_memcmp(pWapiSta->PeerMacAddr, param->sta_addr, 6)) {
+				_rtw_memcpy(pWapiSta->lastTxUnicastPN, WapiASUEPNInitialValueSrc, 16);
+
+				pWapiSta->wapiUsk.bSet = true;
+				_rtw_memcpy(pWapiSta->wapiUsk.dataKey, param->u.crypt.key, 16);
+				_rtw_memcpy(pWapiSta->wapiUsk.micKey, param->u.crypt.key + 16, 16);
+				pWapiSta->wapiUsk.keyId = param->u.crypt.idx ;
+				pWapiSta->wapiUsk.bTxEnable = true;
+
+				_rtw_memcpy(pWapiSta->lastRxUnicastPNBEQueue, WapiAEPNInitialValueSrc, 16);
+				_rtw_memcpy(pWapiSta->lastRxUnicastPNBKQueue, WapiAEPNInitialValueSrc, 16);
+				_rtw_memcpy(pWapiSta->lastRxUnicastPNVIQueue, WapiAEPNInitialValueSrc, 16);
+				_rtw_memcpy(pWapiSta->lastRxUnicastPNVOQueue, WapiAEPNInitialValueSrc, 16);
+				_rtw_memcpy(pWapiSta->lastRxUnicastPN, WapiAEPNInitialValueSrc, 16);
+				pWapiSta->wapiUskUpdate.bTxEnable = false;
+				pWapiSta->wapiUskUpdate.bSet = false;
+
+				if (psecuritypriv->sw_encrypt == false || psecuritypriv->sw_decrypt == false) {
+					/* set unicast key for ASUE */
+					rtw_wapi_set_key(padapter, &pWapiSta->wapiUsk, pWapiSta, false, false);
+				}
+			}
+		}
+	} else {
+		list_for_each_entry(pWapiSta, &pWapiInfo->wapiSTAUsedList, list) {
+			if (_rtw_memcmp(pWapiSta->PeerMacAddr, get_bssid(pmlmepriv), 6)) {
+				pWapiSta->wapiMsk.bSet = true;
+				_rtw_memcpy(pWapiSta->wapiMsk.dataKey, param->u.crypt.key, 16);
+				_rtw_memcpy(pWapiSta->wapiMsk.micKey, param->u.crypt.key + 16, 16);
+				pWapiSta->wapiMsk.keyId = param->u.crypt.idx ;
+				pWapiSta->wapiMsk.bTxEnable = false;
+				if (!pWapiSta->bSetkeyOk)
+					pWapiSta->bSetkeyOk = true;
+				pWapiSta->bAuthenticateInProgress = false;
+
+				_rtw_memcpy(pWapiSta->lastRxMulticastPN, WapiAEMultiCastPNInitialValueSrc, 16);
+
+				if (psecuritypriv->sw_decrypt == false) {
+					/* set rx broadcast key for ASUE */
+					rtw_wapi_set_key(padapter, &pWapiSta->wapiMsk, pWapiSta, true, false);
+				}
+			}
+		}
+	}
+}
 #endif

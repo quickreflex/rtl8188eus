@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2012 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _RTW_WLAN_UTIL_C_
 
 #include <drv_types.h>
@@ -27,6 +22,8 @@
 	#define ETH_TYPE_OFFSET	12
 	#define PROTOCOL_OFFSET	23
 	#define IP_OFFSET	30
+	#define IPv6_OFFSET	38
+	#define IPv6_PROTOCOL_OFFSET	20
 #endif
 
 unsigned char ARTHEROS_OUI1[] = {0x00, 0x03, 0x7f};
@@ -75,6 +72,39 @@ static u8 rtw_basic_rate_mix[7] = {
 	IEEE80211_OFDM_RATE_24MB | IEEE80211_BASIC_RATE_MASK
 };
 
+/* test if rate is defined in rtw_basic_rate_cck */
+bool rtw_is_basic_rate_cck(u8 rate)
+{
+	int i;
+
+	for (i = 0; i < 4; i++)
+		if ((rtw_basic_rate_cck[i] & 0x7F) == (rate & 0x7F))
+			return 1;
+	return 0;
+}
+
+/* test if rate is defined in rtw_basic_rate_ofdm */
+bool rtw_is_basic_rate_ofdm(u8 rate)
+{
+	int i;
+
+	for (i = 0; i < 3; i++)
+		if ((rtw_basic_rate_ofdm[i] & 0x7F) == (rate & 0x7F))
+			return 1;
+	return 0;
+}
+
+/* test if rate is defined in rtw_basic_rate_mix */
+bool rtw_is_basic_rate_mix(u8 rate)
+{
+	int i;
+
+	for (i = 0; i < 7; i++)
+		if ((rtw_basic_rate_mix[i] & 0x7F) == (rate & 0x7F))
+			return 1;
+	return 0;
+}
+
 int new_bcn_max = 3;
 
 int cckrates_included(unsigned char *rate, int ratelen)
@@ -104,8 +134,7 @@ int cckratesonly_included(unsigned char *rate, int ratelen)
 	return _TRUE;
 }
 
-#ifdef CONFIG_GET_RAID_BY_DRV
-s8 rtw_get_tx_nss(_adapter *adapter, struct sta_info *psta)
+s8 rtw_get_sta_rx_nss(_adapter *adapter, struct sta_info *psta)
 {
 	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
 	u8 rf_type = RF_1T1R, custom_rf_type;
@@ -119,154 +148,50 @@ s8 rtw_get_tx_nss(_adapter *adapter, struct sta_info *psta)
 	if (RF_TYPE_VALID(custom_rf_type))
 		rf_type = custom_rf_type;
 
-#ifdef CONFIG_80211AC_VHT
-	if (psta->vhtpriv.vht_option) {
-		nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
-		nss = rtw_min(nss, rtw_vht_mcsmap_to_nss(psta->vhtpriv.vht_mcs_map));
-	} else
-#endif /* CONFIG_80211AC_VHT */
-	if (psta->htpriv.ht_option) {
-		nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
-		nss = rtw_min(nss, rtw_ht_mcsset_to_nss(psta->htpriv.ht_cap.supp_mcs_set));
-	}
+	nss = rtw_min(rf_type_to_rf_rx_cnt(rf_type), hal_spec->rx_nss_num);
 
+#ifdef CONFIG_80211N_HT
+	#ifdef CONFIG_80211AC_VHT
+	if (psta->vhtpriv.vht_option)
+		nss = rtw_min(nss, rtw_vht_mcsmap_to_nss(psta->vhtpriv.vht_mcs_map));
+	else
+	#endif /* CONFIG_80211AC_VHT */
+	if (psta->htpriv.ht_option)
+		nss = rtw_min(nss, rtw_ht_mcsset_to_nss(psta->htpriv.ht_cap.supp_mcs_set));
+#endif /*CONFIG_80211N_HT*/
 	RTW_INFO("%s: %d SS\n", __func__, nss);
 	return nss;
 }
 
-u8 networktype_to_raid(_adapter *adapter, struct sta_info *psta)
+s8 rtw_get_sta_tx_nss(_adapter *adapter, struct sta_info *psta)
 {
-	unsigned char raid;
-	switch (psta->wireless_mode) {
-	case WIRELESS_11B:
-		raid = RATR_INX_WIRELESS_B;
-		break;
-	case WIRELESS_11A:
-	case WIRELESS_11G:
-		raid = RATR_INX_WIRELESS_G;
-		break;
-	case WIRELESS_11BG:
-		raid = RATR_INX_WIRELESS_GB;
-		break;
-	case WIRELESS_11_24N:
-	case WIRELESS_11_5N:
-		raid = RATR_INX_WIRELESS_N;
-		break;
-	case WIRELESS_11A_5N:
-	case WIRELESS_11G_24N:
-		raid = RATR_INX_WIRELESS_NG;
-		break;
-	case WIRELESS_11BG_24N:
-		raid = RATR_INX_WIRELESS_NGB;
-		break;
-	default:
-		raid = RATR_INX_WIRELESS_GB;
-		break;
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
+	u8 rf_type = RF_1T1R, custom_rf_type;
+	s8 nss = 1;
 
-	}
-	return raid;
+	if (!psta)
+		return nss;
 
+	custom_rf_type = adapter->registrypriv.rf_config;
+	rtw_hal_get_hwreg(adapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
+	if (RF_TYPE_VALID(custom_rf_type))
+		rf_type = custom_rf_type;
+
+	nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
+
+#ifdef CONFIG_80211N_HT
+	#ifdef CONFIG_80211AC_VHT
+	if (psta->vhtpriv.vht_option)
+		nss = rtw_min(nss, rtw_vht_mcsmap_to_nss(psta->vhtpriv.vht_mcs_map));
+	else
+	#endif /* CONFIG_80211AC_VHT */
+	if (psta->htpriv.ht_option)
+		nss = rtw_min(nss, rtw_ht_mcsset_to_nss(psta->htpriv.ht_cap.supp_mcs_set));
+#endif /*CONFIG_80211N_HT*/
+	RTW_INFO("%s: %d SS\n", __func__, nss);
+	return nss;
 }
 
-u8 networktype_to_raid_ex(_adapter *adapter, struct sta_info *psta)
-{
-	struct mlme_ext_priv	*pmlmeext = &adapter->mlmeextpriv;
-	u8 raid = RATEID_IDX_BGN_40M_1SS, cur_rf_type, rf_type, custom_rf_type;
-	s8 tx_nss;
-
-	tx_nss = rtw_get_tx_nss(adapter, psta);
-
-	switch (psta->wireless_mode) {
-	case WIRELESS_11B:
-		raid = RATEID_IDX_B;
-		break;
-	case WIRELESS_11A:
-	case WIRELESS_11G:
-		raid = RATEID_IDX_G;
-		break;
-	case WIRELESS_11BG:
-		raid = RATEID_IDX_BG;
-		break;
-	case WIRELESS_11_24N:
-	case WIRELESS_11_5N:
-	case WIRELESS_11A_5N:
-	case WIRELESS_11G_24N:
-		if (tx_nss == 1)
-			raid = RATEID_IDX_GN_N1SS;
-		else if (tx_nss == 2)
-			raid = RATEID_IDX_GN_N2SS;
-		else if (tx_nss == 3)
-			raid = RATEID_IDX_BGN_3SS;
-		else
-			RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		break;
-	case WIRELESS_11B_24N:
-	case WIRELESS_11BG_24N:
-		if (psta->bw_mode == CHANNEL_WIDTH_20) {
-			if (tx_nss == 1)
-				raid = RATEID_IDX_BGN_20M_1SS_BN;
-			else if (tx_nss == 2)
-				raid = RATEID_IDX_BGN_20M_2SS_BN;
-			else if (tx_nss == 3)
-				raid = RATEID_IDX_BGN_3SS;
-			else
-				RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		} else {
-			if (tx_nss == 1)
-				raid = RATEID_IDX_BGN_40M_1SS;
-			else if (tx_nss == 2)
-				raid = RATEID_IDX_BGN_40M_2SS;
-			else if (tx_nss == 3)
-				raid = RATEID_IDX_BGN_3SS;
-			else
-				RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		}
-		break;
-#ifdef CONFIG_80211AC_VHT
-	case WIRELESS_11_5AC:
-		if (tx_nss == 1)
-			raid = RATEID_IDX_VHT_1SS;
-		else if (tx_nss == 2)
-			raid = RATEID_IDX_VHT_2SS;
-		else if (tx_nss == 3)
-			raid = RATEID_IDX_VHT_3SS;
-		else
-			RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		break;
-	case WIRELESS_11_24AC:
-		if (psta->bw_mode >= CHANNEL_WIDTH_80) {
-			if (tx_nss == 1)
-				raid = RATEID_IDX_VHT_1SS;
-			else if (tx_nss == 2)
-				raid = RATEID_IDX_VHT_2SS;
-			else if (tx_nss == 3)
-				raid = RATEID_IDX_VHT_3SS;
-			else
-				RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		} else {
-			if (tx_nss == 1)
-				raid = RATEID_IDX_MIX1;
-			else if (tx_nss == 2)
-				raid = RATEID_IDX_MIX2;
-			else if (tx_nss == 3)
-				raid = RATEID_IDX_VHT_3SS;
-			else
-				RTW_INFO("tx_nss error!(tx_nss=%d)\n", tx_nss);
-		}
-		break;
-#endif
-	default:
-		RTW_INFO("unexpected wireless mode!(psta->wireless_mode=%x)\n", psta->wireless_mode);
-		break;
-
-	}
-
-	/* RTW_INFO("psta->wireless_mode=%x,  tx_nss=%d\n", psta->wireless_mode, tx_nss); */
-
-	return raid;
-
-}
-#endif
 u8 judge_network_type(_adapter *padapter, unsigned char *rate, int ratelen)
 {
 	u8 network_type = 0;
@@ -615,53 +540,6 @@ exit:
 	return valid;
 }
 
-u8 rtw_get_offset_by_ch(u8 channel)
-{
-	u8 offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-
-	if (channel >= 1 && channel <= 4)
-		offset = HAL_PRIME_CHNL_OFFSET_LOWER;
-	else if (channel >= 5 && channel <= 14)
-		offset = HAL_PRIME_CHNL_OFFSET_UPPER;
-	else {
-		switch (channel) {
-		case 36:
-		case 44:
-		case 52:
-		case 60:
-		case 100:
-		case 108:
-		case 116:
-		case 124:
-		case 132:
-		case 149:
-		case 157:
-			offset = HAL_PRIME_CHNL_OFFSET_LOWER;
-			break;
-		case 40:
-		case 48:
-		case 56:
-		case 64:
-		case 104:
-		case 112:
-		case 120:
-		case 128:
-		case 136:
-		case 153:
-		case 161:
-			offset = HAL_PRIME_CHNL_OFFSET_UPPER;
-			break;
-		default:
-			offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-			break;
-		}
-
-	}
-
-	return offset;
-
-}
-
 u8 rtw_get_center_ch(u8 channel, u8 chnl_bw, u8 chnl_offset)
 {
 	u8 center_ch = channel;
@@ -696,12 +574,12 @@ u8 rtw_get_center_ch(u8 channel, u8 chnl_bw, u8 chnl_offset)
 	return center_ch;
 }
 
-inline u32 rtw_get_on_oper_ch_time(_adapter *adapter)
+inline systime rtw_get_on_oper_ch_time(_adapter *adapter)
 {
 	return adapter_to_dvobj(adapter)->on_oper_ch_time;
 }
 
-inline u32 rtw_get_on_cur_ch_time(_adapter *adapter)
+inline systime rtw_get_on_cur_ch_time(_adapter *adapter)
 {
 	if (adapter->mlmeextpriv.cur_channel == adapter_to_dvobj(adapter)->oper_channel)
 		return adapter_to_dvobj(adapter)->on_oper_ch_time;
@@ -735,10 +613,8 @@ void set_channel_bwmode(_adapter *padapter, unsigned char channel, unsigned char
 #ifdef CONFIG_MCC_MODE
 	if (MCC_EN(padapter)) {
 		/* driver doesn't set channel setting reg under MCC */
-		if (rtw_hal_check_mcc_status(padapter, MCC_STATUS_DOING_MCC)) {
+		if (rtw_hal_check_mcc_status(padapter, MCC_STATUS_DOING_MCC))
 			RTW_INFO("Warning: Do not set channel setting reg MCC mode\n");
-			rtw_warn_on(1);
-		}
 	}
 #endif
 
@@ -747,9 +623,6 @@ void set_channel_bwmode(_adapter *padapter, unsigned char channel, unsigned char
 		struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
 		bool ori_overlap_radar_detect_ch = rtw_rfctl_overlap_radar_detect_ch(rfctl);
 		bool new_overlap_radar_detect_ch = _rtw_rfctl_overlap_radar_detect_ch(rfctl, channel, bwmode, channel_offset);
-
-		if (new_overlap_radar_detect_ch)
-			rtw_odm_radar_detect_enable(padapter);
 
 		if (new_overlap_radar_detect_ch && IS_CH_WAITING(rfctl)) {
 			u8 pause = 0xFF;
@@ -784,7 +657,9 @@ void set_channel_bwmode(_adapter *padapter, unsigned char channel, unsigned char
 #endif
 
 #ifdef CONFIG_DFS_MASTER
-		if (ori_overlap_radar_detect_ch && !new_overlap_radar_detect_ch) {
+		if (new_overlap_radar_detect_ch)
+			rtw_odm_radar_detect_enable(padapter);
+		else if (ori_overlap_radar_detect_ch) {
 			u8 pause = 0x00;
 
 			rtw_odm_radar_detect_disable(padapter);
@@ -794,16 +669,6 @@ void set_channel_bwmode(_adapter *padapter, unsigned char channel, unsigned char
 #endif /* CONFIG_DFS_MASTER */
 
 	_exit_critical_mutex(&(adapter_to_dvobj(padapter)->setch_mutex), NULL);
-}
-
-int get_bsstype(unsigned short capability)
-{
-	if (capability & BIT(0))
-		return WIFI_FW_AP_STATE;
-	else if (capability & BIT(1))
-		return WIFI_FW_ADHOC_STATE;
-	else
-		return 0;
 }
 
 __inline u8 *get_my_bssid(WLAN_BSSID_EX *pnetwork)
@@ -856,7 +721,7 @@ int is_IBSS_empty(_adapter *padapter)
 	for (i = 0; i < macid_ctl->num; i++) {
 		if (!rtw_macid_is_used(macid_ctl, i))
 			continue;
-		if (rtw_macid_get_if_g(macid_ctl, i) != padapter->iface_id)
+		if (!rtw_macid_is_iface_specific(macid_ctl, i, padapter))
 			continue;
 		if (!GET_H2CCMD_MSRRPT_PARM_OPMODE(&macid_ctl->h2c_msr[i]))
 			continue;
@@ -1297,7 +1162,7 @@ s16 rtw_camid_search(_adapter *adapter, u8 *addr, s16 kid, s8 gk)
 	return cam_id;
 }
 
-s16 rtw_get_camid(_adapter *adapter, struct sta_info *sta, u8 *addr, s16 kid)
+s16 rtw_get_camid(_adapter *adapter, u8 *addr, s16 kid, u8 gk)
 {
 	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
 	struct cam_ctl_t *cam_ctl = &dvobj->cam_ctl;
@@ -1318,7 +1183,7 @@ s16 rtw_get_camid(_adapter *adapter, struct sta_info *sta, u8 *addr, s16 kid)
 
 	/* find cam entry which has the same addr, kid (, gk bit) */
 	if (_rtw_camctl_chk_cap(adapter, SEC_CAP_CHK_BMC) == _TRUE)
-		i = _rtw_camid_search(adapter, addr, kid, sta ? _FALSE : _TRUE);
+		i = _rtw_camid_search(adapter, addr, kid, gk);
 	else
 		i = _rtw_camid_search(adapter, addr, kid, -1);
 
@@ -1338,12 +1203,8 @@ s16 rtw_get_camid(_adapter *adapter, struct sta_info *sta, u8 *addr, s16 kid)
 	}
 
 	if (i == cam_ctl->num) {
-		if (sta)
-			RTW_PRINT(FUNC_ADPT_FMT" pairwise key with "MAC_FMT" id:%u no room\n"
-				  , FUNC_ADPT_ARG(adapter), MAC_ARG(addr), kid);
-		else
-			RTW_PRINT(FUNC_ADPT_FMT" group key with "MAC_FMT" id:%u no room\n"
-				  , FUNC_ADPT_ARG(adapter), MAC_ARG(addr), kid);
+		RTW_PRINT(FUNC_ADPT_FMT" %s key with "MAC_FMT" id:%u no room\n"
+			, FUNC_ADPT_ARG(adapter), gk ? "group" : "pairwise", MAC_ARG(addr), kid);
 		rtw_warn_on(1);
 		goto _exit;
 	}
@@ -1355,7 +1216,7 @@ _exit:
 	return cam_id;
 }
 
-s16 rtw_camid_alloc(_adapter *adapter, struct sta_info *sta, u8 kid, bool *used)
+s16 rtw_camid_alloc(_adapter *adapter, struct sta_info *sta, u8 kid, u8 gk, bool *used)
 {
 	struct mlme_ext_info *mlmeinfo = &adapter->mlmeextpriv.mlmext_info;
 	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
@@ -1369,8 +1230,12 @@ s16 rtw_camid_alloc(_adapter *adapter, struct sta_info *sta, u8 kid, bool *used)
 
 	if ((((mlmeinfo->state & 0x03) == WIFI_FW_AP_STATE) || ((mlmeinfo->state & 0x03) == WIFI_FW_ADHOC_STATE))
 	    && !sta) {
+		/*
+		* 1. non-STA mode WEP key
+		* 2. group TX key
+		*/
 #ifndef CONFIG_CONCURRENT_MODE
-		/* AP/Ad-hoc mode group key static alloction to default key by key ID on Non-concurrent*/
+		/* static alloction to default key by key ID when concurrent is not defined */
 		if (kid > 3) {
 			RTW_PRINT(FUNC_ADPT_FMT" group key with invalid key id:%u\n"
 				  , FUNC_ADPT_ARG(adapter), kid);
@@ -1381,13 +1246,18 @@ s16 rtw_camid_alloc(_adapter *adapter, struct sta_info *sta, u8 kid, bool *used)
 #else
 		u8 *addr = adapter_mac_addr(adapter);
 
-		cam_id = rtw_get_camid(adapter, sta, addr, kid);
+		cam_id = rtw_get_camid(adapter, addr, kid, gk);
 		if (1)
 			RTW_PRINT(FUNC_ADPT_FMT" group key with "MAC_FMT" assigned cam_id:%u\n"
 				, FUNC_ADPT_ARG(adapter), MAC_ARG(addr), cam_id);
 #endif
 	} else {
-		u8 *addr = sta ? sta->hwaddr : NULL;
+		/*
+		* 1. STA mode WEP key
+		* 2. STA mode group RX key
+		* 3. sta key (pairwise, group RX)
+		*/
+		u8 *addr = sta ? sta->cmn.mac_addr : NULL;
 
 		if (!sta) {
 			if (!(mlmeinfo->state & WIFI_FW_ASSOC_SUCCESS)) {
@@ -1396,7 +1266,7 @@ s16 rtw_camid_alloc(_adapter *adapter, struct sta_info *sta, u8 kid, bool *used)
 			}
 			addr = get_bssid(&adapter->mlmepriv);/*A2*/
 		}
-		cam_id = rtw_get_camid(adapter, sta, addr, kid);
+		cam_id = rtw_get_camid(adapter, addr, kid, gk);
 	}
 
 
@@ -1556,7 +1426,7 @@ void flush_all_cam_entry(_adapter *padapter)
 			} else
 				rtw_clearstakey_cmd(padapter, psta, _FALSE);
 		}
-	} else if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE) {
+	} else if (MLME_IS_AP(padapter) || MLME_IS_MESH(padapter)) {
 #if 1
 		int cam_id = -1;
 		u8 *addr = adapter_mac_addr(padapter);
@@ -1674,6 +1544,10 @@ void WMMOnAssocRsp(_adapter *padapter)
 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
 	struct xmit_priv		*pxmitpriv = &padapter->xmitpriv;
 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+#ifdef CONFIG_WMMPS_STA
+	struct mlme_priv	*pmlmepriv = &(padapter->mlmepriv);
+	struct qos_priv	*pqospriv = &pmlmepriv->qospriv;
+#endif /* CONFIG_WMMPS_STA */	
 
 	acm_mask = 0;
 
@@ -1799,10 +1673,14 @@ void WMMOnAssocRsp(_adapter *padapter)
 			pxmitpriv->wmm_para_seq[i] = inx[i];
 			RTW_INFO("wmm_para_seq(%d): %d\n", i, pxmitpriv->wmm_para_seq[i]);
 		}
-#ifdef CONFIG_WMMPS
-		if (pmlmeinfo->WMM_param.QoS_info & BIT(7))
+		
+#ifdef CONFIG_WMMPS_STA
+		/* if AP supports UAPSD function, driver must set each uapsd TID to coresponding mac register 0x693 */
+		if (pmlmeinfo->WMM_param.QoS_info & AP_SUPPORTED_UAPSD) {
+			pqospriv->uapsd_ap_supported = 1;
 			rtw_hal_set_hwreg(padapter, HW_VAR_UAPSD_TID, NULL);
-#endif
+		}
+#endif /* CONFIG_WMMPS_STA */
 	}
 }
 
@@ -1895,10 +1773,10 @@ static void bwmode_update_check(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pI
 
 			if (phtpriv_sta->ht_option) {
 				/* bwmode				 */
-				psta->bw_mode = pmlmeext->cur_bwmode;
+				psta->cmn.bw_mode = pmlmeext->cur_bwmode;
 				phtpriv_sta->ch_offset = pmlmeext->cur_ch_offset;
 			} else {
-				psta->bw_mode = CHANNEL_WIDTH_20;
+				psta->cmn.bw_mode = CHANNEL_WIDTH_20;
 				phtpriv_sta->ch_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
 			}
 
@@ -2239,21 +2117,29 @@ void	update_ldpc_stbc_cap(struct sta_info *psta)
 #ifdef CONFIG_80211AC_VHT
 	if (psta->vhtpriv.vht_option) {
 		if (TEST_FLAG(psta->vhtpriv.ldpc_cap, LDPC_VHT_ENABLE_TX))
-			psta->ldpc = 1;
+			psta->cmn.ldpc_en = VHT_LDPC_EN;
+		else
+			psta->cmn.ldpc_en = 0;
 
 		if (TEST_FLAG(psta->vhtpriv.stbc_cap, STBC_VHT_ENABLE_TX))
-			psta->stbc = 1;
+			psta->cmn.stbc_en = VHT_STBC_EN;
+		else
+			psta->cmn.stbc_en = 0;
 	} else
 #endif /* CONFIG_80211AC_VHT */
 		if (psta->htpriv.ht_option) {
 			if (TEST_FLAG(psta->htpriv.ldpc_cap, LDPC_HT_ENABLE_TX))
-				psta->ldpc = 1;
+				psta->cmn.ldpc_en = HT_LDPC_EN;
+			else
+				psta->cmn.ldpc_en = 0;
 
 			if (TEST_FLAG(psta->htpriv.stbc_cap, STBC_HT_ENABLE_TX))
-				psta->stbc = 1;
+				psta->cmn.stbc_en = HT_STBC_EN;
+			else
+				psta->cmn.stbc_en = 0;
 		} else {
-			psta->ldpc = 0;
-			psta->stbc = 0;
+			psta->cmn.ldpc_en = 0;
+			psta->cmn.stbc_en = 0;
 		}
 
 #endif /* CONFIG_80211N_HT */
@@ -2378,7 +2264,7 @@ int rtw_get_bcn_keys(ADAPTER *Adapter, u8 *pframe, u32 packet_len,
 		recv_beacon->encryp_protocol = ENCRYP_PROTOCOL_WPA2;
 		rtw_parse_wpa2_ie(elems.rsn_ie - 2, elems.rsn_ie_len + 2,
 			&recv_beacon->group_cipher, &recv_beacon->pairwise_cipher,
-				  &recv_beacon->is_8021x);
+				  &recv_beacon->is_8021x, NULL);
 	}
 	/* checking WPA secon */
 	else if (elems.wpa_ie && elems.wpa_ie_len) {
@@ -2653,7 +2539,7 @@ int rtw_check_bcn_info(ADAPTER *Adapter, u8 *pframe, u32 packet_len)
 			pbuf = rtw_get_wpa2_ie(&bssid->IEs[12], &wpa_ielen, bssid->IELength - 12);
 
 			if (pbuf && (wpa_ielen > 0)) {
-				rtw_parse_wpa2_ie(pbuf, wpa_ielen + 2, &group_cipher, &pairwise_cipher, &is_8021x);
+				rtw_parse_wpa2_ie(pbuf, wpa_ielen + 2, &group_cipher, &pairwise_cipher, &is_8021x, NULL);
 			}
 		}
 
@@ -2716,7 +2602,7 @@ void update_beacon_info(_adapter *padapter, u8 *pframe, uint pkt_len, struct sta
 			/* to update WMM paramter set while receiving beacon */
 			if (_rtw_memcmp(pIE->data, WMM_PARA_OUI, 6) && pIE->Length == WLAN_WMM_LEN)	/* WMM */
 				if (WMM_param_handler(padapter, pIE)) report_wmm_edca_update(padapter);
-			
+
 			break;
 
 		case _HT_EXTRA_INFO_IE_:	/* HT info */
@@ -2750,20 +2636,17 @@ void update_beacon_info(_adapter *padapter, u8 *pframe, uint pkt_len, struct sta
 }
 
 #ifdef CONFIG_DFS
-void process_csa_ie(_adapter *padapter, u8 *pframe, uint pkt_len)
+void process_csa_ie(_adapter *padapter, u8 *ies, uint ies_len)
 {
 	unsigned int i;
-	unsigned int len;
 	PNDIS_802_11_VARIABLE_IEs	pIE;
 	u8 new_ch_no = 0;
 
 	if (padapter->mlmepriv.handle_dfs == _TRUE)
 		return;
 
-	len = pkt_len - (_BEACON_IE_OFFSET_ + WLAN_HDR_A3_LEN);
-
-	for (i = 0; i < len;) {
-		pIE = (PNDIS_802_11_VARIABLE_IEs)(pframe + (_BEACON_IE_OFFSET_ + WLAN_HDR_A3_LEN) + i);
+	for (i = 0; i + 1 < ies_len;) {
+		pIE = (PNDIS_802_11_VARIABLE_IEs)(ies + i);
 
 		switch (pIE->ElementID) {
 		case _CH_SWTICH_ANNOUNCE_:
@@ -2989,13 +2872,27 @@ int support_short_GI(_adapter *padapter, struct HT_caps_element *pHT_caps, u8 bw
 		return _FAIL;
 }
 
-unsigned char get_highest_rate_idx(u32 mask)
+unsigned char get_highest_rate_idx(u64 mask)
 {
 	int i;
 	unsigned char rate_idx = 0;
 
-	for (i = 31; i >= 0; i--) {
-		if (mask & BIT(i)) {
+	for (i = 63; i >= 0; i--) {
+		if ((mask >> i) & 0x01) {
+			rate_idx = i;
+			break;
+		}
+	}
+
+	return rate_idx;
+}
+unsigned char get_lowest_rate_idx_ex(u64 mask, int start_bit)
+{
+	int i;
+	unsigned char rate_idx = 0;
+
+	for (i = start_bit; i < 64; i++) {
+		if ((mask >> i) & 0x01) {
 			rate_idx = i;
 			break;
 		}
@@ -3006,13 +2903,13 @@ unsigned char get_highest_rate_idx(u32 mask)
 
 void Update_RA_Entry(_adapter *padapter, struct sta_info *psta)
 {
-	rtw_hal_update_ra_mask(psta, psta->rssi_level, _TRUE);
+	rtw_hal_update_ra_mask(psta);
 }
 
 void set_sta_rate(_adapter *padapter, struct sta_info *psta)
 {
 	/* rate adaptive	 */
-	rtw_hal_update_ra_mask(psta, psta->rssi_level, _TRUE);
+	rtw_hal_update_ra_mask(psta);
 }
 
 /* Update RRSR and Rate for USERATE */
@@ -3129,6 +3026,30 @@ unsigned char check_assoc_AP(u8 *pframe, uint len)
 	RTW_INFO("link to new AP\n");
 	return HT_IOT_PEER_UNKNOWN;
 }
+
+#ifdef CONFIG_80211AC_VHT
+unsigned char get_vht_mu_bfer_cap(u8 *pframe, uint len)
+{
+	unsigned int i;
+	unsigned int mu_bfer=0;
+	PNDIS_802_11_VARIABLE_IEs pIE;
+
+	for (i = sizeof(NDIS_802_11_FIXED_IEs); i < len;) {
+		pIE = (PNDIS_802_11_VARIABLE_IEs)(pframe + i);
+
+		switch (pIE->ElementID) {
+
+		case EID_VHTCapability:
+			mu_bfer = GET_VHT_CAPABILITY_ELE_MU_BFER(pIE->data);
+			break;
+		default:
+			break;
+		}
+		i += (pIE->Length + 2);
+	}
+	return mu_bfer;
+}
+#endif
 
 void update_capinfo(PADAPTER Adapter, u16 updateCap)
 {
@@ -3355,12 +3276,44 @@ void process_addba_req(_adapter *padapter, u8 *paddba_req, u8 *addr)
 
 
 	accept = rtw_rx_ampdu_is_accept(padapter);
-	size = rtw_rx_ampdu_size(padapter);
+	if (padapter->fix_rx_ampdu_size != RX_AMPDU_SIZE_INVALID)
+		size = padapter->fix_rx_ampdu_size;
+	else {
+		size = rtw_rx_ampdu_size(padapter);
+		size = rtw_min(size, rx_ampdu_size_sta_limit(padapter, psta));
+	}
 
 	if (accept == _TRUE)
 		rtw_addbarsp_cmd(padapter, addr, tid, 0, size, start_seq);
 	else
 		rtw_addbarsp_cmd(padapter, addr, tid, 37, size, start_seq); /* reject ADDBA Req */
+
+exit:
+	return;
+}
+
+void rtw_process_bar_frame(_adapter *padapter, union recv_frame *precv_frame)
+{
+	struct rx_pkt_attrib *pattrib = &precv_frame->u.hdr.attrib;
+	struct sta_priv *pstapriv = &padapter->stapriv;
+	u8 *pframe = precv_frame->u.hdr.rx_data;
+	struct sta_info *psta = NULL;
+	struct recv_reorder_ctrl *preorder_ctrl = NULL;
+	u8 tid = 0;
+	u16 start_seq=0;
+
+	psta = rtw_get_stainfo(pstapriv, get_addr2_ptr(pframe));
+	if (psta == NULL)
+		goto exit;
+
+	tid = ((cpu_to_le16((*(u16 *)(pframe + 16))) & 0xf000) >> 12);
+	preorder_ctrl = &psta->recvreorder_ctrl[tid];
+	start_seq = ((cpu_to_le16(*(u16 *)(pframe + 18))) >> 4);
+	preorder_ctrl->indicate_seq = start_seq;
+
+	/* for Debug use */
+	if (0)
+		RTW_INFO(FUNC_ADPT_FMT" tid=%d, start_seq=%d\n", FUNC_ADPT_ARG(padapter),  tid, start_seq);
 
 exit:
 	return;
@@ -3482,8 +3435,6 @@ void beacon_timing_control(_adapter *padapter)
 	rtw_hal_bcn_related_reg_setting(padapter);
 }
 
-#define CONFIG_SHARED_BMC_MACID
-
 void dump_macid_map(void *sel, struct macid_bmp *map, u8 max_num)
 {
 	RTW_PRINT_SEL(sel, "0x%08x\n", map->m0);
@@ -3543,22 +3494,6 @@ inline void rtw_macid_map_set(struct macid_bmp *map, u8 id)
 		rtw_warn_on(1);
 }
 
-/*Record bc's mac-id and sec-cam-id*/
-inline void rtw_iface_bcmc_id_set(_adapter *padapter, u8 mac_id)
-{
-	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
-	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
-
-	macid_ctl->iface_bmc[padapter->iface_id] = mac_id;
-}
-inline u8 rtw_iface_bcmc_id_get(_adapter *padapter)
-{
-	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
-	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
-
-	return macid_ctl->iface_bmc[padapter->iface_id];
-}
-
 inline void rtw_macid_map_clr(struct macid_bmp *map, u8 id)
 {
 	if (id < 32)
@@ -3589,24 +3524,48 @@ inline bool rtw_macid_is_bmc(struct macid_ctl_t *macid_ctl, u8 id)
 	return rtw_macid_is_set(&macid_ctl->bmc, id);
 }
 
-inline s8 rtw_macid_get_if_g(struct macid_ctl_t *macid_ctl, u8 id)
+inline u8 rtw_macid_get_iface_bmp(struct macid_ctl_t *macid_ctl, u8 id)
 {
 	int i;
-
-#ifdef CONFIG_SHARED_BMC_MACID
-	if (rtw_macid_is_bmc(macid_ctl, id)) {
-		for (i = 0; i < CONFIG_IFACE_NUMBER; i++)
-			if (macid_ctl->iface_bmc[i] == id)
-				return i;
-		return -1;
-	}
-#endif
+	u8 iface_bmp = 0;
 
 	for (i = 0; i < CONFIG_IFACE_NUMBER; i++) {
 		if (rtw_macid_is_set(&macid_ctl->if_g[i], id))
-			return i;
+			iface_bmp |= BIT(i);
 	}
-	return -1;
+	return iface_bmp;
+}
+
+inline bool rtw_macid_is_iface_shared(struct macid_ctl_t *macid_ctl, u8 id)
+{
+	int i;
+	u8 iface_bmp = 0;
+
+	for (i = 0; i < CONFIG_IFACE_NUMBER; i++) {
+		if (rtw_macid_is_set(&macid_ctl->if_g[i], id)) {
+			if (iface_bmp)
+				return 1;
+			iface_bmp |= BIT(i);
+		}
+	}
+
+	return 0;
+}
+
+inline bool rtw_macid_is_iface_specific(struct macid_ctl_t *macid_ctl, u8 id, _adapter *adapter)
+{
+	int i;
+	u8 iface_bmp = 0;
+
+	for (i = 0; i < CONFIG_IFACE_NUMBER; i++) {
+		if (rtw_macid_is_set(&macid_ctl->if_g[i], id)) {
+			if (iface_bmp || i != adapter->iface_id)
+				return 0;
+			iface_bmp |= BIT(i);
+		}
+	}
+
+	return iface_bmp ? 1 : 0;
 }
 
 inline s8 rtw_macid_get_ch_g(struct macid_ctl_t *macid_ctl, u8 id)
@@ -3618,6 +3577,22 @@ inline s8 rtw_macid_get_ch_g(struct macid_ctl_t *macid_ctl, u8 id)
 			return i;
 	}
 	return -1;
+}
+
+/*Record bc's mac-id and sec-cam-id*/
+inline void rtw_iface_bcmc_id_set(_adapter *padapter, u8 mac_id)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
+
+	macid_ctl->iface_bmc[padapter->iface_id] = mac_id;
+}
+inline u8 rtw_iface_bcmc_id_get(_adapter *padapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
+
+	return macid_ctl->iface_bmc[padapter->iface_id];
 }
 
 void rtw_alloc_macid(_adapter *padapter, struct sta_info *psta)
@@ -3632,51 +3607,31 @@ void rtw_alloc_macid(_adapter *padapter, struct sta_info *psta)
 	u8 last_id = 0;
 	u8 is_bc_sta = _FALSE;
 
-	if (_rtw_memcmp(psta->hwaddr, adapter_mac_addr(padapter), ETH_ALEN)) {
-		psta->mac_id = macid_ctl->num;
+	if (_rtw_memcmp(psta->cmn.mac_addr, adapter_mac_addr(padapter), ETH_ALEN)) {
+		psta->cmn.mac_id = macid_ctl->num;
 		return;
 	}
 
-	if (_rtw_memcmp(psta->hwaddr, bc_addr, ETH_ALEN)) {
+	if (_rtw_memcmp(psta->cmn.mac_addr, bc_addr, ETH_ALEN)) {
 		is_bc_sta = _TRUE;
 		rtw_iface_bcmc_id_set(padapter, INVALID_SEC_MAC_CAM_ID);	/*init default value*/
 	}
 
-#ifdef CONFIG_SHARED_BMC_MACID
 	if (is_bc_sta
-#ifdef CONFIG_CONCURRENT_MODE
-	    && (check_fwstate(&padapter->mlmepriv, WIFI_STATION_STATE) || check_fwstate(&padapter->mlmepriv, WIFI_NULL_STATE))
-#endif
-	   ) {
-		/* use shared broadcast & multicast macid 1 for all ifaces which configure to station mode*/
-		_enter_critical_bh(&macid_ctl->lock, &irqL);
-		rtw_macid_map_set(used_map, 1);
-		rtw_macid_map_set(&macid_ctl->bmc, 1);
-		rtw_macid_map_set(&macid_ctl->if_g[padapter->iface_id], 1);
-		macid_ctl->sta[1] = psta;
-		/* TODO ch_g? */
-		_exit_critical_bh(&macid_ctl->lock, &irqL);
-		i = 1;
+		#ifdef CONFIG_CONCURRENT_MODE
+		&& (MLME_IS_STA(padapter) || MLME_IS_NULL(padapter))
+		#endif
+	) {
+		/* STA mode have no BMC data TX, shared with this macid */
+		/* When non-concurrent, only one BMC data TX is used, shared with this macid */
+		/* TODO: When concurrent, non-security BMC data TX may use this, but will not control by specific macid sleep */
+		i = RTW_DEFAULT_MGMT_MACID;
 		goto assigned;
 	}
-#endif
-
-#ifdef CONFIG_MCC_MODE
-	if (MCC_EN(padapter)) {
-		if (MLME_IS_AP(padapter) || MLME_IS_GO(padapter))
-			/* GO/AP assign client macid from 8 */
-			last_id = 8;
-	}
-#endif /* CONFIG_MCC_MODE */
 
 	_enter_critical_bh(&macid_ctl->lock, &irqL);
 
 	for (i = last_id; i < macid_ctl->num; i++) {
-#ifdef CONFIG_SHARED_BMC_MACID
-		if (i == 1)
-			continue;
-#endif
-
 #ifdef CONFIG_MCC_MODE
 		/* macid 0/1 reserve for mcc for mgnt queue macid */
 		if (MCC_EN(padapter)) {
@@ -3687,8 +3642,7 @@ void rtw_alloc_macid(_adapter *padapter, struct sta_info *psta)
 		}
 #endif /* CONFIG_MCC_MODE */
 
-		if (is_bc_sta) {/*for SoftAP's Broadcast sta-info*/
-			/*TODO:non-security AP may allociated macid = 1*/
+		if (is_bc_sta) {
 			struct cam_ctl_t *cam_ctl = dvobj_to_sec_camctl(dvobj);
 
 			if ((!rtw_macid_is_used(macid_ctl, i)) && (!rtw_sec_camid_is_used(cam_ctl, i)))
@@ -3723,18 +3677,18 @@ void rtw_alloc_macid(_adapter *padapter, struct sta_info *psta)
 	_exit_critical_bh(&macid_ctl->lock, &irqL);
 
 	if (i >= macid_ctl->num) {
-		psta->mac_id = macid_ctl->num;
-		RTW_ERR(FUNC_ADPT_FMT" if%u, hwaddr:"MAC_FMT" no available macid\n"
-			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->hwaddr));
+		psta->cmn.mac_id = macid_ctl->num;
+		RTW_ERR(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" no available macid\n"
+			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->cmn.mac_addr));
 		rtw_warn_on(1);
 		goto exit;
 	} else
 		goto assigned;
 
 assigned:
-	psta->mac_id = i;
-	RTW_INFO(FUNC_ADPT_FMT" if%u, hwaddr:"MAC_FMT" macid:%u\n"
-		, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->hwaddr), psta->mac_id);
+	psta->cmn.mac_id = i;
+	RTW_INFO(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" macid:%u\n"
+		, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->cmn.mac_addr), psta->cmn.mac_id);
 
 exit:
 	return;
@@ -3746,65 +3700,75 @@ void rtw_release_macid(_adapter *padapter, struct sta_info *psta)
 	u8 bc_addr[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
 	struct macid_ctl_t *macid_ctl = dvobj_to_macidctl(dvobj);
-	u8 is_bc_sta = _FALSE;
+	u8 ifbmp;
+	int i;
 
-	if (_rtw_memcmp(psta->hwaddr, adapter_mac_addr(padapter), ETH_ALEN))
-		return;
+	if (_rtw_memcmp(psta->cmn.mac_addr, adapter_mac_addr(padapter), ETH_ALEN))
+		goto exit;
 
-	if (_rtw_memcmp(psta->hwaddr, bc_addr, ETH_ALEN))
-		is_bc_sta = _TRUE;
-
-#ifdef CONFIG_SHARED_BMC_MACID
-	if (is_bc_sta
-#ifdef CONFIG_CONCURRENT_MODE
-	    && (check_fwstate(&padapter->mlmepriv, WIFI_STATION_STATE) || check_fwstate(&padapter->mlmepriv, WIFI_NULL_STATE))
-#endif
-	   )
-		return;
-
-	if (psta->mac_id == 1) {
-		RTW_ERR(FUNC_ADPT_FMT" if%u, hwaddr:"MAC_FMT" with macid:%u\n"
-			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->hwaddr), psta->mac_id);
-		if (check_fwstate(&padapter->mlmepriv, WIFI_STATION_STATE) || check_fwstate(&padapter->mlmepriv, WIFI_NULL_STATE))
-			rtw_warn_on(1);
-		return;
+	if (psta->cmn.mac_id >= macid_ctl->num) {
+		RTW_WARN(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" macid:%u not valid\n"
+			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1
+			, MAC_ARG(psta->cmn.mac_addr), psta->cmn.mac_id);
+		rtw_warn_on(1);
+		goto exit;
 	}
-#endif
+
+	if (psta->cmn.mac_id == RTW_DEFAULT_MGMT_MACID)
+		goto msg;
 
 	_enter_critical_bh(&macid_ctl->lock, &irqL);
 
-	if (psta->mac_id < macid_ctl->num) {
-		int i;
+	if (!rtw_macid_is_used(macid_ctl, psta->cmn.mac_id)) {
+		RTW_WARN(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" macid:%u not used\n"
+			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1
+			, MAC_ARG(psta->cmn.mac_addr), psta->cmn.mac_id);
+		_exit_critical_bh(&macid_ctl->lock, &irqL);
+		rtw_warn_on(1);
+		goto exit;
+	}
 
-		if (!rtw_macid_is_used(macid_ctl, psta->mac_id)) {
-			RTW_ERR(FUNC_ADPT_FMT" if%u, hwaddr:"MAC_FMT" macid:%u not used\n"
-				, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1, MAC_ARG(psta->hwaddr), psta->mac_id);
-			rtw_warn_on(1);
-		}
+	ifbmp = rtw_macid_get_iface_bmp(macid_ctl, psta->cmn.mac_id);
+	if (!(ifbmp & BIT(padapter->iface_id))) {
+		RTW_WARN(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" macid:%u not used by self\n"
+			, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1
+			, MAC_ARG(psta->cmn.mac_addr), psta->cmn.mac_id);
+		_exit_critical_bh(&macid_ctl->lock, &irqL);
+		rtw_warn_on(1);
+		goto exit;
+	}
 
-		rtw_macid_map_clr(&macid_ctl->used, psta->mac_id);
-		rtw_macid_map_clr(&macid_ctl->bmc, psta->mac_id);
+	if (_rtw_memcmp(psta->cmn.mac_addr, bc_addr, ETH_ALEN)) {
+		struct cam_ctl_t *cam_ctl = dvobj_to_sec_camctl(dvobj);
+		u8 id = rtw_iface_bcmc_id_get(padapter);
 
-		if (is_bc_sta) {
-			struct cam_ctl_t *cam_ctl = dvobj_to_sec_camctl(dvobj);
-			u8 id = rtw_iface_bcmc_id_get(padapter);
+		if ((id != INVALID_SEC_MAC_CAM_ID) && (id < cam_ctl->num))
+			rtw_sec_cam_map_clr(&cam_ctl->used, id);
 
-			if ((id != INVALID_SEC_MAC_CAM_ID) && (id < cam_ctl->num))
-				rtw_sec_cam_map_clr(&cam_ctl->used, id);
+		rtw_iface_bcmc_id_set(padapter, INVALID_SEC_MAC_CAM_ID);
+	}
 
-			rtw_iface_bcmc_id_set(padapter, INVALID_SEC_MAC_CAM_ID);
-		}
+	rtw_macid_map_clr(&macid_ctl->if_g[padapter->iface_id], psta->cmn.mac_id);
 
-		for (i = 0; i < CONFIG_IFACE_NUMBER; i++)
-			rtw_macid_map_clr(&macid_ctl->if_g[i], psta->mac_id);
+	ifbmp &= ~BIT(padapter->iface_id);
+	if (!ifbmp) { /* only used by self */
+		rtw_macid_map_clr(&macid_ctl->used, psta->cmn.mac_id);
+		rtw_macid_map_clr(&macid_ctl->bmc, psta->cmn.mac_id);
 		for (i = 0; i < 2; i++)
-			rtw_macid_map_clr(&macid_ctl->ch_g[i], psta->mac_id);
-		macid_ctl->sta[psta->mac_id] = NULL;
+			rtw_macid_map_clr(&macid_ctl->ch_g[i], psta->cmn.mac_id);
+		macid_ctl->sta[psta->cmn.mac_id] = NULL;
 	}
 
 	_exit_critical_bh(&macid_ctl->lock, &irqL);
 
-	psta->mac_id = macid_ctl->num;
+msg:
+	RTW_INFO(FUNC_ADPT_FMT" if%u, mac_addr:"MAC_FMT" macid:%u\n"
+		, FUNC_ADPT_ARG(padapter), padapter->iface_id + 1
+		, MAC_ARG(psta->cmn.mac_addr), psta->cmn.mac_id
+	);
+
+exit:
+	psta->cmn.mac_id = macid_ctl->num;
 }
 
 /* For 8188E RA */
@@ -3889,8 +3853,31 @@ inline void rtw_macid_ctl_set_rate_bmp1(struct macid_ctl_t *macid_ctl, u8 id, u3
 		RTW_INFO("macid:%u, rate_bmp1:0x%08X\n", id, macid_ctl->rate_bmp1[id]);
 }
 
+inline void rtw_macid_ctl_init_sleep_reg(struct macid_ctl_t *macid_ctl, u16 m0, u16 m1, u16 m2, u16 m3)
+{
+	macid_ctl->reg_sleep_m0 = m0;
+#if (MACID_NUM_SW_LIMIT > 32)
+	macid_ctl->reg_sleep_m1 = m1;
+#endif
+#if (MACID_NUM_SW_LIMIT > 64)
+	macid_ctl->reg_sleep_m2 = m2;
+#endif
+#if (MACID_NUM_SW_LIMIT > 96)
+	macid_ctl->reg_sleep_m3 = m3;
+#endif
+}
+
 inline void rtw_macid_ctl_init(struct macid_ctl_t *macid_ctl)
 {
+	int i;
+	u8 id = RTW_DEFAULT_MGMT_MACID;
+
+	rtw_macid_map_set(&macid_ctl->used, id);
+	rtw_macid_map_set(&macid_ctl->bmc, id);
+	for (i = 0; i < CONFIG_IFACE_NUMBER; i++)
+		rtw_macid_map_set(&macid_ctl->if_g[i], id);
+	macid_ctl->sta[id] = NULL;
+
 	_rtw_spinlock_init(&macid_ctl->lock);
 }
 
@@ -3898,6 +3885,87 @@ inline void rtw_macid_ctl_deinit(struct macid_ctl_t *macid_ctl)
 {
 	_rtw_spinlock_free(&macid_ctl->lock);
 }
+
+inline bool rtw_bmp_is_set(const u8 *bmp, u8 bmp_len, u8 id)
+{
+	if (id / 8 >= bmp_len)
+		return 0;
+
+	return bmp[id / 8] & BIT(id % 8);
+}
+
+inline void rtw_bmp_set(u8 *bmp, u8 bmp_len, u8 id)
+{
+	if (id / 8 < bmp_len)
+		bmp[id / 8] |= BIT(id % 8);
+}
+
+inline void rtw_bmp_clear(u8 *bmp, u8 bmp_len, u8 id)
+{
+	if (id / 8 < bmp_len)
+		bmp[id / 8] &= ~BIT(id % 8);
+}
+
+inline bool rtw_bmp_not_empty(const u8 *bmp, u8 bmp_len)
+{
+	int i;
+
+	for (i = 0; i < bmp_len; i++) {
+		if (bmp[i])
+			return 1;
+	}
+
+	return 0;
+}
+
+inline bool rtw_bmp_not_empty_exclude_bit0(const u8 *bmp, u8 bmp_len)
+{
+	int i;
+
+	for (i = 0; i < bmp_len; i++) {
+		if (i == 0) {
+			if (bmp[i] & 0xFE)
+				return 1;
+		} else {
+			if (bmp[i])
+				return 1;
+		}
+	}
+
+	return 0;
+}
+
+#ifdef CONFIG_AP_MODE
+/* Check the id be set or not in map , if yes , return a none zero value*/
+bool rtw_tim_map_is_set(_adapter *padapter, const u8 *map, u8 id)
+{
+	return rtw_bmp_is_set(map, padapter->stapriv.aid_bmp_len, id);
+}
+
+/* Set the id into map array*/
+void rtw_tim_map_set(_adapter *padapter, u8 *map, u8 id)
+{
+	rtw_bmp_set(map, padapter->stapriv.aid_bmp_len, id);
+}
+
+/* Clear the id from map array*/
+void rtw_tim_map_clear(_adapter *padapter, u8 *map, u8 id)
+{
+	rtw_bmp_clear(map, padapter->stapriv.aid_bmp_len, id);
+}
+
+/* Check have anyone bit be set , if yes return true*/
+bool rtw_tim_map_anyone_be_set(_adapter *padapter, const u8 *map)
+{
+	return rtw_bmp_not_empty(map, padapter->stapriv.aid_bmp_len);
+}
+
+/* Check have anyone bit be set exclude bit0 , if yes return true*/
+bool rtw_tim_map_anyone_be_set_exclude_aid0(_adapter *padapter, const u8 *map)
+{
+	return rtw_bmp_not_empty_exclude_bit0(map, padapter->stapriv.aid_bmp_len);
+}
+#endif /* CONFIG_AP_MODE */
 
 #if 0
 unsigned int setup_beacon_frame(_adapter *padapter, unsigned char *beacon_frame)
@@ -4047,31 +4115,6 @@ _adapter *dvobj_get_adapter_by_addr(struct dvobj_priv *dvobj, u8 *addr)
 	return adapter;
 }
 
-#if defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN)
-void rtw_get_current_ip_address(PADAPTER padapter, u8 *pcurrentip)
-{
-	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
-	struct mlme_ext_info *pmlmeinfo = &(pmlmeext->mlmext_info);
-	struct in_device *my_ip_ptr = padapter->pnetdev->ip_ptr;
-	u8 ipaddress[4];
-
-	if ((pmlmeinfo->state & WIFI_FW_LINKING_STATE) ||
-	    pmlmeinfo->state & WIFI_FW_AP_STATE) {
-		if (my_ip_ptr != NULL) {
-			struct in_ifaddr *my_ifa_list  = my_ip_ptr->ifa_list ;
-			if (my_ifa_list != NULL) {
-				ipaddress[0] = my_ifa_list->ifa_address & 0xFF;
-				ipaddress[1] = (my_ifa_list->ifa_address >> 8) & 0xFF;
-				ipaddress[2] = (my_ifa_list->ifa_address >> 16) & 0xFF;
-				ipaddress[3] = my_ifa_list->ifa_address >> 24;
-				RTW_INFO("%s: %d.%d.%d.%d ==========\n", __func__,
-					ipaddress[0], ipaddress[1], ipaddress[2], ipaddress[3]);
-				_rtw_memcpy(pcurrentip, ipaddress, 4);
-			}
-		}
-	}
-}
-#endif
 #ifdef CONFIG_WOWLAN
 bool rtw_wowlan_parser_pattern_cmd(u8 *input, char *pattern,
 				   int *pattern_len, char *bit_mask)
@@ -4154,7 +4197,10 @@ void rtw_wow_pattern_sw_reset(_adapter *adapter)
 	int i;
 	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(adapter);
 
-	pwrctrlpriv->wowlan_pattern_idx = DEFAULT_PATTERN_NUM;
+	if (pwrctrlpriv->default_patterns_en == _TRUE)
+		pwrctrlpriv->wowlan_pattern_idx = DEFAULT_PATTERN_NUM;
+	else
+		pwrctrlpriv->wowlan_pattern_idx = 0;
 
 	for (i = 0 ; i < MAX_WKFM_CAM_NUM; i++) {
 		_rtw_memset(pwrctrlpriv->patterns[i].content, '\0', sizeof(pwrctrlpriv->patterns[i].content));
@@ -4166,19 +4212,22 @@ void rtw_wow_pattern_sw_reset(_adapter *adapter)
 u8 rtw_set_default_pattern(_adapter *adapter)
 {
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(adapter);
-	struct registry_priv *pregistrypriv = &adapter->registrypriv;
+	struct mlme_ext_priv *pmlmeext = &adapter->mlmeextpriv;
+	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
 	u8 index = 0;
-	u8 currentip[4];
 	u8 multicast_addr[3] = {0x01, 0x00, 0x5e};
 	u8 multicast_ip[4] = {0xe0, 0x28, 0x28, 0x2a};
-	u8 unicast_mask[5] = {0x3f, 0x70, 0x80, 0xc0, 0x03};
-	u8 multicast_mask[5] = {0x07, 0x70, 0x80, 0xc0, 0x03};
-	u8 ip_protocol[3] = {0x08, 0x00, 0x45};
-	u8 icmp_protocol[1] = {0x01};
-	u8 tcp_protocol[1] = {0x06};
-	u8 udp_protocol[1] = {0x11};
 
-	if (pregistrypriv->default_patterns_en == _FALSE)
+	u8 unicast_mask[5] = {0x3f, 0x70, 0x80, 0xc0, 0x03};
+	u8 icmpv6_mask[7] = {0x00, 0x70, 0x10, 0x00, 0xc0, 0xc0, 0x3f};
+	u8 multicast_mask[5] = {0x07, 0x70, 0x80, 0xc0, 0x03};
+
+	u8 ip_protocol[3] = {0x08, 0x00, 0x45};
+	u8 ipv6_protocol[3] = {0x86, 0xdd, 0x60};
+
+	u8 *target = NULL;
+
+	if (pwrpriv->default_patterns_en == _FALSE)
 		return 0;
 
 	for (index = 0 ; index < DEFAULT_PATTERN_NUM ; index++) {
@@ -4189,60 +4238,108 @@ u8 rtw_set_default_pattern(_adapter *adapter)
 		pwrpriv->patterns[index].len = 0;
 	}
 
-	rtw_get_current_ip_address(adapter, currentip);
-
 	/*TCP/ICMP unicast*/
 	for (index = 0 ; index < DEFAULT_PATTERN_NUM ; index++) {
 		switch (index) {
 		case 0:
-			_rtw_memcpy(pwrpriv->patterns[index].content,
-				    adapter_mac_addr(adapter),
+			target = pwrpriv->patterns[index].content;
+			_rtw_memcpy(target, adapter_mac_addr(adapter),
 				    ETH_ALEN);
-			_rtw_memcpy(pwrpriv->patterns[index].content + ETH_TYPE_OFFSET,
-				    &ip_protocol, sizeof(ip_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + PROTOCOL_OFFSET,
-				    &tcp_protocol, sizeof(tcp_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + IP_OFFSET,
-				    &currentip, sizeof(currentip));
+
+			target += ETH_TYPE_OFFSET;
+			_rtw_memcpy(target, &ip_protocol,
+				    sizeof(ip_protocol));
+
+			/* TCP */
+			target += (PROTOCOL_OFFSET - ETH_TYPE_OFFSET);
+			_rtw_memset(target, 0x06, 1);
+
+			target += (IP_OFFSET - PROTOCOL_OFFSET);
+
+			_rtw_memcpy(target, pmlmeinfo->ip_addr,
+				    RTW_IP_ADDR_LEN);
+
 			_rtw_memcpy(pwrpriv->patterns[index].mask,
 				    &unicast_mask, sizeof(unicast_mask));
-			pwrpriv->patterns[index].len = IP_OFFSET + sizeof(currentip);
+
+			pwrpriv->patterns[index].len =
+				IP_OFFSET + RTW_IP_ADDR_LEN;
 			break;
 		case 1:
-			_rtw_memcpy(pwrpriv->patterns[index].content,
-				    adapter_mac_addr(adapter),
+			target = pwrpriv->patterns[index].content;
+			_rtw_memcpy(target, adapter_mac_addr(adapter),
 				    ETH_ALEN);
-			_rtw_memcpy(pwrpriv->patterns[index].content + ETH_TYPE_OFFSET,
-				    &ip_protocol, sizeof(ip_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + PROTOCOL_OFFSET,
-				    &icmp_protocol, sizeof(icmp_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + IP_OFFSET,
-				    &currentip, sizeof(currentip));
+
+			target += ETH_TYPE_OFFSET;
+			_rtw_memcpy(target, &ip_protocol, sizeof(ip_protocol));
+
+			/* ICMP */
+			target += (PROTOCOL_OFFSET - ETH_TYPE_OFFSET);
+			_rtw_memset(target, 0x01, 1);
+
+			target += (IP_OFFSET - PROTOCOL_OFFSET);
+			_rtw_memcpy(target, pmlmeinfo->ip_addr,
+				    RTW_IP_ADDR_LEN);
+
 			_rtw_memcpy(pwrpriv->patterns[index].mask,
 				    &unicast_mask, sizeof(unicast_mask));
-			pwrpriv->patterns[index].len = IP_OFFSET + sizeof(currentip);
+			pwrpriv->patterns[index].len =
+
+				IP_OFFSET + RTW_IP_ADDR_LEN;
 			break;
+#ifdef CONFIG_IPV6
 		case 2:
-			_rtw_memcpy(pwrpriv->patterns[index].content, &multicast_addr,
+			if (pwrpriv->wowlan_ns_offload_en == _TRUE) {
+				target = pwrpriv->patterns[index].content;
+				target += ETH_TYPE_OFFSET;
+
+				_rtw_memcpy(target, &ipv6_protocol,
+					    sizeof(ipv6_protocol));
+
+				/* ICMPv6 */
+				target += (IPv6_PROTOCOL_OFFSET -
+					   ETH_TYPE_OFFSET);
+				_rtw_memset(target, 0x3a, 1);
+
+				target += (IPv6_OFFSET - IPv6_PROTOCOL_OFFSET);
+				_rtw_memcpy(target, pmlmeinfo->ip6_addr,
+					    RTW_IPv6_ADDR_LEN);
+
+				_rtw_memcpy(pwrpriv->patterns[index].mask,
+					    &icmpv6_mask, sizeof(icmpv6_mask));
+				pwrpriv->patterns[index].len =
+					IPv6_OFFSET + RTW_IPv6_ADDR_LEN;
+			}
+			break;
+#endif /*CONFIG_IPV6*/
+		case 3:
+			target = pwrpriv->patterns[index].content;
+			_rtw_memcpy(target, &multicast_addr,
 				    sizeof(multicast_addr));
-			_rtw_memcpy(pwrpriv->patterns[index].content + ETH_TYPE_OFFSET,
-				    &ip_protocol, sizeof(ip_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + PROTOCOL_OFFSET,
-				    &udp_protocol, sizeof(udp_protocol));
-			_rtw_memcpy(pwrpriv->patterns[index].content + IP_OFFSET,
-				    &multicast_ip, sizeof(multicast_ip));
+
+			target += ETH_TYPE_OFFSET;
+			_rtw_memcpy(target, &ip_protocol, sizeof(ip_protocol));
+
+			/* UDP */
+			target += (PROTOCOL_OFFSET - ETH_TYPE_OFFSET);
+			_rtw_memset(target, 0x11, 1);
+
+			target += (IP_OFFSET - PROTOCOL_OFFSET);
+			_rtw_memcpy(target, &multicast_ip,
+				    sizeof(multicast_ip));
+
 			_rtw_memcpy(pwrpriv->patterns[index].mask,
 				    &multicast_mask, sizeof(multicast_mask));
+
 			pwrpriv->patterns[index].len =
 				IP_OFFSET + sizeof(multicast_ip);
 			break;
+		default:
+			break;
 		}
 	}
-
 	return index;
 }
-
-
 
 void rtw_dump_priv_pattern(_adapter *adapter, u8 idx)
 {
@@ -4481,11 +4578,7 @@ int rtw_dev_nlo_info_set(struct pno_nlo_info *nlo_info, pno_ssid_t *ssid,
 	source = rtw_zmalloc(2048);
 
 	if (source != NULL) {
-		#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
-			len = kernel_read(fp, source, len, &pos);
-		#else
-			len = vfs_read(fp, source, len, &pos);
-		#endif
+		len = vfs_read(fp, source, len, &pos);
 		rtw_parse_cipher_list(nlo_info, source);
 		rtw_mfree(source, 2048);
 	}
