@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2013 - 2017 Realtek Corporation.
+ * Copyright(c) 2016 - 2018 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,21 +12,14 @@
  * more details.
  *
  *****************************************************************************/
-#ifndef CONFIG_PLATFORM_OPS
-/*
- * Return:
- *	0:	power on successfully
- *	others: power on failed
- */
-int platform_wifi_power_on(void)
-{
-	int ret = 0;
+#ifndef __PLATFORM_ZTE_ZX296716_SDIO_H__
+#define __PLATFORM_ZTE_ZX296716_SDIO_H__
 
+extern void sdio_reinit(void);
+extern void extern_wifi_set_enable(int val);
+#ifdef CONFIG_A16T03_BOARD
+extern int sdio_host_is_null(void);
+extern void remove_card(void);
+#endif /* CONFIG_A16T03_BOARD */
 
-	return ret;
-}
-
-void platform_wifi_power_off(void)
-{
-}
-#endif /* !CONFIG_PLATFORM_OPS */
+#endif /* __PLATFORM_ZTE_ZX296716_SDIO_H__ */

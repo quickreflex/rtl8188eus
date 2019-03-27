@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2013 - 2017 Realtek Corporation.
+ * Copyright(c) 2017 - 2018 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,21 +12,17 @@
  * more details.
  *
  *****************************************************************************/
-#ifndef CONFIG_PLATFORM_OPS
-/*
- * Return:
- *	0:	power on successfully
- *	others: power on failed
- */
-int platform_wifi_power_on(void)
-{
-	int ret = 0;
+#ifndef __PLATFORM_HISILICON_HI3798_SDIO_H__
+#define __PLATFORM_HISILICON_HI3798_SDIO_H__
 
+typedef unsigned int	HI_U32;
 
-	return ret;
-}
+typedef int		HI_S32;
 
-void platform_wifi_power_off(void)
-{
-}
-#endif /* !CONFIG_PLATFORM_OPS */
+#define HI_SUCCESS	0
+#define HI_FAILURE	(-1)
+
+extern HI_S32 HI_DRV_GPIO_SetDirBit(HI_U32 u32GpioNo, HI_U32 u32DirBit);
+extern HI_S32 HI_DRV_GPIO_WriteBit(HI_U32 u32GpioNo, HI_U32 u32BitValue);
+
+#endif /* __PLATFORM_HISILICON_HI3798_SDIO_H__ */
