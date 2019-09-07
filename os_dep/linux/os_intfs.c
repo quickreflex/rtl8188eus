@@ -1098,16 +1098,15 @@ unsigned int rtw_classify8021d(struct sk_buff *skb)
 	return dscp >> 5;
 }
 
-
-#if (LINUX_VERSION_CODE>=KERNEL_VERSION(4,19,0))
+#if (LINUX_VERSION_CODE>=KERNEL_VERSION(5, 2, 0))
+static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb, struct net_device* sb_dev)
+#elif (LINUX_VERSION_CODE>=KERNEL_VERSION(4,19,0))
 static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb,
 		struct net_device *sb_dev,
 		select_queue_fallback_t fallback)
 #else
 static u16 rtw_select_queue(struct net_device *dev, struct sk_buff *skb
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 1)
-    , struct net_device *accel_priv /*this is, to best of my knowledge, unused */
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
 	, void *accel_priv
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
 	, select_queue_fallback_t fallback
