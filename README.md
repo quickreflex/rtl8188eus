@@ -1,5 +1,5 @@
 # rtl8188eus
-Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips and working under the new linux kernel (4.17.x).
+Wifi driver support for rtl8188eu, rtl8188eus and rtl8188etv chips and working under the new linux kernel (5.1.x).
 More information about your wifi device can be found here: https://wikidevi.com.
 
 Compiling & Building
@@ -12,7 +12,7 @@ with make: KSRC=path_to_kernel_source and KVER=kernel_version. The same goes for
 
 ### Download
 ```
-git clone -b master https://github.com/quickreflex/rtl8188eus.git
+git clone -b v5.2.2.4 https://github.com/quickreflex/rtl8188eus.git
 cd rtl8188eu
 ```
 
@@ -31,10 +31,19 @@ dkms install 8188eu/1.0
 
 Switch modes
 ---------
-### For setting monitor mode
+### Supported interface modes
+```
+* IBSS
+* managed
+* AP
+* monitor
+* P2P-client
+* P2P-GO
+```
+### For setting interface modes
 ```
 ifconfig wlan0 down
-iw dev wlan0 set type monitor
+iw dev wlan0 set type managed
 ifconfig wlan0 up
 ```
 ### For setting TX power
